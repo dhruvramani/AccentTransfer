@@ -33,7 +33,8 @@ parser.add_argument('--loss_lr', type=float, default=0.001, help='learning rate'
 
 # Accent Network trainer
 parser.add_argument('--aresume', type=int, default=0, help='resume accent network from checkpoint')
-parser.add_argument('--accent_lr', type=float, default=0.001, help='learning rate fro accent network')
+parser.add_argument('--accent_lr', type=float, default=0.001
+    , help='learning rate fro accent network')
 
 args = parser.parse_args()
 
@@ -84,7 +85,7 @@ mse = torch.nn.MSELoss() # MaskedMSE()
 criterion = nn.CrossEntropyLoss()
 
 print('==> Creating networks..')
-t_net = Transformation()to(device)
+t_net = Transformation().to(device)
 a_net = AlexNet().to(device)
 encoder = Encoder().to(device)
 decoder = Decoder().to(device)
