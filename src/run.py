@@ -20,6 +20,10 @@ from feature import *
 from dataset import *
 from utils import progress_bar
 
+import matplotlib.pyplot as plt
+import matplotlib
+
+
 parser = argparse.ArgumentParser(description='PyTorch Speech Accent Transfer')
 parser.add_argument('--lr', default=0.001, type=float, help='learning rate') # NOTE change for diff models
 parser.add_argument('--batch_size', default=32, type=int)
@@ -91,19 +95,20 @@ a_net = AlexNet().to(device)
 encoder = Encoder().to(device)
 decoder = Decoder().to(device)
 
-# print('==> Preparing data..')
-# filtered_df = filter_df(None)
-# X_train, X_test, y_train, y_test = split_people(filtered_df)
+print('==> Preparing data..')
+filtered_df = filter_df(None)
+X_train, X_test, y_train, y_test = split_people(filtered_df)
 
-# train_count = Counter(y_train)
-# test_count =  Counter(y_test)
-# print('==> Creatting segments..')
-# X_train, y_train = make_segments(X_train, y_train)
-# X_train, _, y_train, _ = train_test_split(X_train, y_train, test_size=0)
+train_count = Counter(y_train)
+test_count =  Counter(y_test)
+print('==> Creatting segments..')
+X_train, y_train = make_segments(X_train, y_train)
+X_train, _, y_train, _ = train_test_split(X_train, y_train, test_size=0)
 
 print("==> loading dataset..")
-with open("../save/data.dat", "rb") as f:
-    (X_train, X_test, y_train, y_test) = pickle.load(f)
+with open("../save/data2.dat", "wb") as f:
+    data = (X_train, X_test, y_train, y_test)
+    pickle.dump(data, f)
 
 if(args.lresume):
     with open("../save/transform/logs/lossn_train_loss.log", "w+") as f:
@@ -213,7 +218,12 @@ def train_lossn(epoch):
         loss = mse(output[:,:,:-1,:-1], audio)
         loss.backward()
         optimizer.step()
-        
+
+        a1 = audio[0].cpu().numpy()
+        a2 = output[0].detach().cpu().numpy()
+        matplotlib.image.imsave('../save/plots/input/before.png', a1[0])
+        matplotlib.image.imsave('../save/plots/input/after.png', a2[0])
+        break
         train_loss += loss.item()
 
         del audio, latent_space, output, loss
