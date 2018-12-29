@@ -235,7 +235,7 @@ def train_transformation(epoch):
     
     trainset = AccentDataset(X_train, y_train)
     dataloader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size, shuffle=True)
-    dataloader = iter(dataloader))
+    dataloader = iter(dataloader)
 
     train_loss, tr_con, tr_acc, tr_mse = 0, 0, 0, 0
 
