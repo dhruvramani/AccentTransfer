@@ -5,48 +5,42 @@ import argparse
 import librosa
 import matplotlib
 import numpy as np
+from collections import Counter
 import torch.nn.functional as F
 from torch.autograd import Variable
 import torch.backends.cudnn as cudnn
 from torch.utils.data import DataLoader
 from torchvision.utils import save_image
+from sklearn.model_selection import train_test_split
 
+import accuracy
 from models import *
 from feature import *
 from dataset import *
-from vctk import VCTK
 from utils import progress_bar
-
 
 parser = argparse.ArgumentParser(description='PyTorch Speech Accent Transfer')
 parser.add_argument('--lr', default=0.001, type=float, help='learning rate') # NOTE change for diff models
-parser.add_argument('--batch_size', default=25, type=int)
-parser.add_argument('--resume', '-r', type=int, default=1, help='resume from checkpoint')
-parser.add_argument('--epochs', '-e', type=int, default=4, help='Number of epochs to train.')
+parser.add_argument('--batch_size', default=128, type=int)
+parser.add_argument('--resume', '-r', type=int, default=0, help='resume from checkpoint')
+parser.add_argument('--epochs', '-e', type=int, default=10, help='Number of epochs to train.')
 parser.add_argument('--momentum', '-lm', type=float, default=0.9, help='Momentum.')
 parser.add_argument('--decay', '-ld', type=float, default=1e-5, help='Weight decay (L2 penalty).')
 
 # Loss network trainer
-parser.add_argument('--lresume', type=int, default=1, help='resume loss from checkpoint')
+parser.add_argument('--lresume', type=int, default=0, help='resume loss from checkpoint')
 parser.add_argument('--loss_lr', type=float, default=1e-4, help='learning rate')
 
 # Accent Network trainer
-parser.add_argument('--aresume', type=int, default=1, help='resume accent network from checkpoint')
+parser.add_argument('--aresume', type=int, default=0, help='resume accent network from checkpoint')
 parser.add_argument('--accent_lr', type=float, default=1e-3, help='learning rate fro accent network')
 
 args = parser.parse_args()
 
+FILE_NAME = 'data.csv'
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-best_acc, tsepoch, tstep, lsepoch, lstep, asepoch, astype = 0, 0, 0, 0, 0, 0, 0
-
-loss_fn = torch.nn.MSELoss() # MaskedMSE()
-criterion = nn.CrossEntropyLoss()
 
 print('==> Preparing data..')
-
-# To get logs of current run only
-with open("../save/transform/logs/transform_train_loss.log", "w+") as f:
-    pass 
 
 def load_audio(audio_path):
     signal, fs = librosa.load(audio_path)
@@ -84,16 +78,30 @@ def convert_to_mel(audio):
     audio = torch.matmul(meld, audio)
     return audio
 
-print('==> Creating networks..')
-t_net = Transformation()
-t_net = t_net.to(device)
-a_net = AccentNet()
-a_net = a_net.to(device)
+best_acc, tsepoch, tstep, lsepoch, lstep, asepoch, astype = 0, 0, 0, 0, 0, 0, 0
 
+mse = torch.nn.MSELoss() # MaskedMSE()
+criterion = nn.CrossEntropyLoss()
+
+print('==> Creating networks..')
+t_net = Transformation()to(device)
+a_net = AlexNet().to(device)
 encoder = Encoder().to(device)
 decoder = Decoder().to(device)
 
+print('==> Preparing data..')
+filtered_df = filter_df(None)
+X_train, X_test, y_train, y_test = split_people(filtered_df)
+
+train_count = Counter(y_train)
+test_count =  Counter(y_test)
+print('==> Creatting segments..')
+X_train, y_train = make_segments(X_train, y_train)
+X_train, _, y_train, _ = train_test_split(X_train, y_train, test_size=0)
+
 if(args.lresume):
+    with open("../save/transform/logs/lossn_train_loss.log", "w+") as f:
+        pass 
     if(os.path.isfile('../save/loss/loss_encoder.ckpt')):
         encoder.load_state_dict(torch.load('../save/loss/loss_encoder.ckpt'))
         del decoder # no need to waste memory on this if resumed
@@ -106,6 +114,8 @@ if(args.lresume):
             print("=> Loss Network : prev epoch found")
 
 if(args.aresume):
+    with open("../save/accent/logs/accentn_train_loss.log", "w+") as f:
+        pass 
     if(os.path.isfile("../save/accent/network.ckpt")):
         a_net.load_state_dict(torch.load('../save/accent/network.ckpt'))
         print("=> Accent Network : loaded")
@@ -116,8 +126,10 @@ if(args.aresume):
             print("=> Loss Network : prev epoch found")
 
 if(args.resume):
-    if(os.path.isfile('../save/transform/trans_model.ckpt')):
-        t_net.load_state_dict(torch.load('../save/transform/trans_model.ckpt'))
+    with open("../save/transform/logs/transform_train_loss.log", "w+") as f:
+        pass 
+    if(os.path.isfile('../save/transform/network.ckpt')):
+        t_net.load_state_dict(torch.load('../save/transform/network.ckpt'))
         print('==> Transformation network : loaded')
 
     if(os.path.isfile("../save/transform/info.txt")):
@@ -125,28 +137,25 @@ if(args.resume):
             tsepoch, tstep = (int(i) for i in str(f.read()).split(" "))
         print("=> Transformation network : prev epoch found")
 
+
 def train_accent(epoch):
     global astep
-    trainset = AccentDataset()
-    dataloader = torch.utils.data.DataLoader(trainset, batch_size=1, shuffle=True)
+    trainset = AccentDataset(X_train, y_train)
+    dataloader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size, shuffle=True)
     dataloader = iter(dataloader)
-    print('\nEpoch: %d' % epoch)
+    print('\n=> Accent Epoch: %d' % epoch)
     
     train_loss, correct, total = 0, 0, 0
-    params = net.parameters()
-    optimizer = optim.Adam(params, lr=args.accent_lr) #, momentum=0.9)#, weight_decay=5e-4)
-    criterion = nn.CrossEntropyLoss(reduction='sum')
+    params = a_net.parameters()
+    optimizer = optim.Adam(params, lr=args.accent_lr)#, momentum=0.9)#, weight_decay=5e-4)
 
     for batch_idx in range(astep, len(dataloader)):
-        (inputs, targets) = next(dataloader)
-        inputs, targets = inputs[0], targets[0] # batch_size == 1 ~= 1 sample
-        targets = targets.type(torch.LongTensor)
+        inputs, targets = next(dataloader)
         inputs, targets = inputs.to(device), targets.to(device)
 
         optimizer.zero_grad()
-        y_pred = net(inputs)
+        y_pred = a_net(inputs)
         loss = criterion(y_pred, targets)
-        loss = loss / inputs.shape[0]
         loss.backward()
         optimizer.step()
 
@@ -155,51 +164,48 @@ def train_accent(epoch):
         total += targets.size(0)
         correct += predicted.eq(targets).sum().item()
 
-        with open("../save/accent/logs/train_loss.log", "a+") as lfile:
+        with open("../save/accent/logs/accentn_train_loss.log", "a+") as lfile:
             lfile.write("{}\n".format(train_loss / total))
 
-        with open("../save/accent/logs/train_acc", "a+") as afile:
+        with open("../save/accent/logs/accentn_train_acc.log", "a+") as afile:
             afile.write("{}\n".format(correct / total))
 
+        del inputs
+        del targets
         gc.collect()
         torch.cuda.empty_cache()
 
-        torch.save(net.state_dict(), '../save/accent/network.ckpt')
-
+        torch.save(a_net.state_dict(), '../save/accent/network.ckpt')
         with open("../save/accent/info.txt", "w+") as f:
             f.write("{} {}".format(epoch, batch_idx))
 
-        progress_bar(batch_idx, len(dataloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)' % (train_loss / (batch_idx + 1), 100. * correct / total, correct, total))
+        progress_bar(batch_idx, len(dataloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)' % (train_loss/(batch_idx+1), 100.*correct/total, correct, total))
 
-        astep = 0
+    astep = 0
+    print('=> Accent Network : Epoch [{}/{}], Loss:{:.4f}'.format(epoch + 1, 5, train_loss / len(dataloader)))
 
 def train_lossn(epoch):
     global lstep
-    vdataset = VCTK('/home/nevronas/dataset/', download=False, transform=inp_transform)
-    dataloader = DataLoader(vdataset, batch_size=args.batch_size, shuffle=True,  collate_fn=collate_fn)
+    trainset = AccentDataset(X_train, y_train)
+    dataloader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size, shuffle=True)
     dataloader = iter(dataloader)
 
     print('\n=> Loss Epoch: {}'.format(epoch))
     train_loss, total = 0, 0
     params = list(encoder.parameters()) + list(decoder.parameters())
-    optimizer = torch.optim.Adam(params, lr=args.loss_lr, weight_decay=args.decay)
+    optimizer = torch.optim.Adam(params, lr=args.loss_lr)
     
     for i in range(lstep, len(dataloader)):
         (audios, captions) = next(dataloader)
-        if(type(audios) == int):
-            print("=> Loss Network : Chucked Sample")
-            continue
         
         del captions
-        audios = (audios[:, :, :, 0:500].to(device), audios[:, :, :, 500:1000].to(device))
         # Might have to remove the loop,, memory
-        for audio in audios:
-            latent_space = encoder(audio)
-            output = decoder(latent_space)
-            optimizer.zero_grad()
-            loss = criterion(output, audio[:, :, :, :-3])
-            loss.backward()
-            optimizer.step()
+        latent_space = encoder(audio)
+        output = decoder(latent_space)
+        optimizer.zero_grad()
+        loss = mse(output, audio)
+        loss.backward()
+        optimizer.step()
 
         del audios
         train_loss += loss.item()
@@ -213,29 +219,24 @@ def train_lossn(epoch):
         torch.save(encoder.state_dict(), '../save/loss/loss_encoder.ckpt')
         torch.save(decoder.state_dict(), '../save/loss/loss_decoder.ckpt')
 
-        with open("models/info.txt", "w+") as f:
+        with open("../save/loss/info.txt", "w+") as f:
             f.write("{} {}".format(epoch, i))
 
         progress_bar(i, len(dataloader), 'Loss: %.3f' % (train_loss / (i - lstep + 1)))
 
     lstep = 0
-    del dataloader
-    del vdataset
-    print('=> Loss Network : Epoch [{}/{}], Loss:{:.4f}'.format(epoch + 1, 5, train_loss / len(data_loader)))
+    print('=> Loss Network : Epoch [{}/{}], Loss:{:.4f}'.format(epoch + 1, 5, train_loss / len(dataloader)))
 
 def train_transformation(epoch):
     global tstep
     print('\n=> Transformation Epoch: {}'.format(epoch))
     t_net.train()
     
-    vdataset = VCTK('/home/nevronas/dataset/', download=False, transform=inp_transform)
-    dataloader = DataLoader(vdataset, batch_size=args.batch_size, shuffle=True,  collate_fn=collate_fn)
-    dataloader = iter(dataloader)
+    trainset = AccentDataset(X_train, y_train)
+    dataloader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size, shuffle=True)
+    dataloader = iter(dataloader))
 
-    train_loss = 0
-    tr_con = 0
-    tr_acc = 0
-    tr_mse = 0
+    train_loss, tr_con, tr_acc, tr_mse = 0, 0, 0, 0
 
     params = t_net.parameters()     
     optimizer = torch.optim.Adam(params, lr=args.lr) 
@@ -250,86 +251,66 @@ def train_transformation(epoch):
     for param in a_net.parameters():
         param.requires_grad = False
 
-    alpha, beta = 200, 100000 # TODO : CHANGEd from 7.5, 100
+    alpha, beta = 7.5, 100 # TODO : CHANGEd from 7.5, 100
     for i in range(tstep, len(dataloader)):
-        try :
-            (audios, captions) = next(dataloader)
-        except ValueError:
-            break
-        if(type(audios) == int):
-            print("=> Transformation Network : Chucked Sample")
-            continue
+        (audios, captions) = next(dataloader)
+        del captions
+        optimizer.zero_grad()
+        y_t = t_net(audio)
 
-        audios = (audios[:, :, :, 0:300].to(device), audios[:, :, :, 300:600].to(device), audios[:, :, :, 600:900].to(device))
-        for audio in audios : # LOL - splitting coz GPU
-            optimizer.zero_grad()
-            y_t = t_net(audio)
+        content = conten_activ(audio)
+        y_c = conten_activ(y_t)
+        c_loss = mse(y_c, content)
 
-            content = conten_activ(audio)
-            y_c = conten_activ(y_t)
-            c_loss = loss_fn(y_c, content)
+        y_a, y_apred = a_net(audio), a_net(y_t)
+        a_loss = criterion(y_apred, y_a)
 
-            mel_orig, mel_fake = convert_to_mel(audio), convert_to_mel(y_t)
-            y_a, y_apred = a_net(mel_orig), a_net(mel_fake)
-            a_loss = criterion(y_apred, y_a)
+        loss = alpha * c_loss + beta * a_loss 
 
-            loss = alpha * c_loss + beta * a_loss 
-
-            train_loss = loss.item()
-            tr_con = c_loss.item()
-            tr_acc = a_loss.item()
+        train_loss, tr_con, tr_acc = loss.item(), c_loss.item(), a_loss.item()
         
-            loss.backward()
-            optimizer.step()
+        loss.backward()
+        optimizer.step()
 
         del audios
 
         gc.collect()
         torch.cuda.empty_cache()
 
-        torch.save(t_net.state_dict(), '../save/transform/trans_model.ckpt')
+        torch.save(t_net.state_dict(), '../save/transform/network.ckpt')
         with open("../save/transform/info.txt", "w+") as f:
             f.write("{} {}".format(epoch, i))
 
         with open("../save/transform/logs/transform_train_loss.log", "a+") as lfile:
             lfile.write("{}\n".format(train_loss))
 
+        with open("../save/transform/info.txt", "w+") as f:
+            f.write("{} {}".format(epoch, i))
+
         progress_bar(i, len(dataloader), 'Loss: {}, Con Loss: {}, Acc Loss: {} '.format(train_loss, tr_con, tr_acc))
 
     tstep = 0
-    del dataloader
-    del vdataset
     print('=> Transformation Network : Epoch [{}/{}], Loss:{:.4f}'.format(epoch + 1, args.epochs, train_loss))
 
 
 def test():
-    global t_net
-    t_net.load_state_dict(torch.load('../save/transform/trans_model.ckpt'))
-    vdataset = VCTK('/home/nevronas/dataset/', download=False)
-    #dataloader = DataLoader(vdataset, batch_size=1)
-    #audio, _ = next(iter(dataloader))
-    audio, fs = load_audio('/home/nevronas/dataset/vctk/raw/p225_308.wav')
-    audio = torch.Tensor(audio)
-    audio, phase = test_transform(audio)
-    audio = audio.to(device)
-    out = t_net(audio)
-    out = out[0].detach().cpu().numpy()
-    audio = audio[0].cpu().numpy()
-    matplotlib.image.imsave('../save/plots/input/audio.png', audio[0])
-    matplotlib.image.imsave('../save/plots/output/stylized_audio.png', out[0])
-    aud_res = reconstruction(audio[0], phase)
-    out_res = reconstruction(out[0], phase[:, :-3])
-    librosa.output.write_wav("../save/plots/input/raw_audio.wav", aud_res, fs)
-    librosa.output.write_wav("../save/plots/output/raw_output.wav", out_res, fs)
-    print("Testing Finished")
+    # TODO : Test Later
+    print('==> Testing network..')
+    # Make predictions on full X_test mels
+    y_predicted = accuracy.predict_class_all(create_segmented_mels(X_test), net)
 
-'''
+    # Print statistics
+    print(train_count)
+    print(test_count)
+    print(np.sum(accuracy.confusion_matrix(y_predicted, y_test),axis=1))
+    print(accuracy.confusion_matrix(y_predicted, y_test))
+    print(accuracy.get_accuracy(y_predicted,y_test))
+
 for epoch in range(lsepoch, lsepoch + args.epoch):
     train_lossn(epoch)
 for epoch in range(asepoch, asepoch + args.epoch):
     train_accent(epoch)
-'''
 for epoch in range(tsepoch, tsepoch + args.epochs):
     train_transformation(epoch)
 
-test()
+#test()

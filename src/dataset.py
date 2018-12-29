@@ -1,112 +1,59 @@
-import os
+from torch.utils.data import Dataset
+import numpy as np 
 import torch
-import librosa
-import numpy as np
-import pandas as pd
-from feature import *
-from torch.utils.data import Dataset, DataLoader
-import torchaudio
-import librosa
-import matplotlib
-import matplotlib.pyplot as plt
 
-def read_audio(fp, downsample=True):
-    sig, sr = torchaudio.load(fp)
-    if downsample:
-        # 48khz -> 16 khz
-        if sig.size(0) % 3 == 0:
-            sig = sig[::3].contiguous()
-        else:
-            sig = sig[:-(sig.size(0) % 3):3].contiguous()
-    return sig, sr
+# Segmentation for Training 
+def make_segments(mels,labels, COL_SIZE = 30):
+    '''
+    Makes segments of mel and attaches them to the labels
+    :param mels: list of mels
+    :param labels: list of labels
+    :return (tuple): Segments with labels
+    '''
+    segments = []
+    seg_labels = []
+    for mel,label in zip(mels,labels):
+        for start in range(0, int(mel.shape[1] / COL_SIZE)):
+            segments.append(mel[:, start * COL_SIZE:(start + 1) * COL_SIZE])
+            seg_labels.append(label)
+    return (segments, seg_labels)
 
-def collate_fn(data):
-    data = list(filter(lambda x: type(x[1]) != int, data))
-    audios, captions = zip(*data)
-    data = None
-    del data
-    audios = torch.stack(audios, 0)
-    return audios, captions
+# Segmentation for testing
+def segment_one(mel, COL_SIZE = 30):
+    '''
+    Creates segments from on mel image. If last segments is not long enough to be length of columns divided by COL_SIZE
+    :param mel (numpy array): mel array
+    :return (numpy array): Segmented mel array
+    '''
+    segments = []
+    for start in range(0, int(mel.shape[1] / COL_SIZE)):
+        segments.append(mel[:, start * COL_SIZE:(start + 1) * COL_SIZE])
+    return(np.array(segments))
 
-def inp_transform(sample):
-    aud_sample, class_sample = [], []
-    for i in sample:
-        inp, label = i['audio'], i['class']
-        inp, fs = read_audio(inp)
-        inp = inp.numpy()
-        inp = inp.flatten()
-        inp, _ = transform_stft(inp)
-        Sd, mel, meld = mel_transform(inp, fs)
-        inp = torch.matmul(meld, Sd)
-        inp = inp.numpy()
-
-        for j in range(0, inp.shape[1], 500):
-            try:
-                sam = inp[:, j:j + 500]
-                if(sam.shape[1] < 500):
-                    sam = librosa.util.pad_center(sam, 500)
-                '''
-                # Displacement
-                
-                for a in range(513):
-                    for b in range(500):
-                        sam[a][b] = sam[a][b] - sam[a - 1][b]
-                sam = np.abs(sam)
-                '''
-                aud_sample.append(sam)  
-                class_sample.append(label)
-            except Exception as e:
-                print(str(e))
-                pass
-
-        
-    aud_sample = torch.Tensor(aud_sample)
-    class_sample = torch.Tensor(class_sample)
-    aud_sample = aud_sample.unsqueeze(1)
-
-    return aud_sample, class_sample
-
+def create_segmented_mels(X_train):
+    '''
+    Creates segmented mels from X_train
+    :param X_train: list of mels
+    :return: segmented mels
+    '''
+    segmented_mels = []
+    for mel in X_train:
+        segmented_mels.append(segment_one(mel))
+    return(segmented_mels)
 
 class AccentDataset(Dataset):
     """Accent dataset."""
 
-    def __init__(self, csv_file="/home/nevronas/dataset/accent/speakers_all.csv", root_dir="/home/nevronas/dataset/accent/recordings", batch_size=10, transform=inp_transform):
-        """
-        Args:
-            csv_file (string): Path to the csv file.
-            root_dir (string): Directory with all the recordings.
-            transform (callable, optional): Optional transform to be applied
-                on a sample.
-        """
-        self.csv = pd.read_csv(csv_file)
-        self.root_dir = root_dir
-        self.transform = transform
-        self.batch_size = batch_size
-        self.top_15_langs = ['english', 'spanish', 'arabic', 'mandarin', 'french', 'german', 'korean', 'russian', 'portuguese', 'dutch', 'turkish', 'italian', 'polish', 'japanese', 'vietnamese']
+    def __init__(self, X_train, y_train):
+        self.X_train = np.array(X_train)
+        self.y_train = np.array(y_train)
+        self.X_train = np.expand_dims(X_train,axis = 1)
+        self.X_tens = torch.from_numpy(self.X_train)
+        self.y_tens = torch.from_numpy(self.y_train)
         self.count = 0
-    
-    def get_data(self):
-        i, count = self.count * self.batch_size, 0
-        audios = []
-        while(count < self.batch_size):
-            row = self.csv.iloc[[int(i % self.csv.shape[0])]]
-            if(str(row['native_language'].values[0]) in self.top_15_langs):
-                filename = row['filename'].values[0]
-                filename = "{}/{}.mp3".format(self.root_dir, filename)
-                audios.append({"audio" : filename, "class" : self.top_15_langs.index(row['native_language'].values[0])})
-                count += 1
-            i += 1
-
-        return audios
 
     def __len__(self):
-        return self.csv.shape[0]
+        return int(self.y_train.shape[0])
 
     def __getitem__(self, idx):
-        self.count += 1
-        sample = self.get_data()
-        if self.transform:
-            sample = self.transform(sample)
-
-        return sample
-
+        return self.X_tens[idx].type(torch.FloatTensor), self.y_tens[idx].type(torch.LongTensor)
