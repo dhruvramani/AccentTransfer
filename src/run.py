@@ -293,7 +293,7 @@ def train_transformation(epoch, accent_idx=2):
 
         y_apred = a_net(y_t)
         print(y_apred.shape)
-        y_a = torch.ones(y_apred.shape).type(torch.LongTensor).to(device) * accent_idx
+        y_a = torch.ones(y_apred.shape[0], 1).type(torch.LongTensor).to(device) * accent_idx
         a_loss = criterion(y_apred, y_a)
 
         loss = alpha * c_loss + beta * a_loss 
