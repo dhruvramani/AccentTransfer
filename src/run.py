@@ -254,7 +254,7 @@ def train_lossn(epoch):
     lstep = 0
     print('=> Loss Network : Epoch [{}/{}], Loss:{:.4f}'.format(epoch + 1, 5, train_loss / len(dataloader)))
 
-def train_transformation(epoch):
+def train_transformation(epoch, accent_idx=2):
     global tstep
     print('\n=> Transformation Epoch: {}'.format(epoch))
     t_net.train()
@@ -291,7 +291,8 @@ def train_transformation(epoch):
         y_c = conten_activ(y_t)
         c_loss = mse(y_c[:, :, :-1, :-1], content)
 
-        y_a, y_apred = a_net(audio), a_net(y_t)
+        y_apred = a_net(y_t)
+        y_a = torch.ones(y_apred.shape).type(torch.LongTensor).to(device) * accent_idx
         a_loss = criterion(y_apred, y_a)
 
         loss = alpha * c_loss + beta * a_loss 
