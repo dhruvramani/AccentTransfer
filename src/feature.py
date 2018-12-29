@@ -80,7 +80,13 @@ def split_people(df,test_size=0.2):
     '''
     return train_test_split(df['wav'],df['native_language'],test_size=test_size,random_state=1234)
 
-def invert_spectrogram(result, a_content, fs, outpath):
+def reconstruction(S, phase):
+    exp = np.expm1(S)
+    comple = exp * np.exp(phase)
+    istft = librosa.istft(comple)
+    return istft 
+
+def invert_spectrogram(result, a_content, outpath, fs=48000):
     a = np.zeros_like(a_content)
     a[:a_content.shape[0],:] = np.exp(result[0,0].T) - 1
     p = 2 * np.pi * np.random.random_sample(a.shape) - np.pi
