@@ -31,6 +31,7 @@ parser.add_argument('--resume', '-r', type=int, default=0, help='resume from che
 parser.add_argument('--epochs', '-e', type=int, default=10, help='Number of epochs to train.')
 parser.add_argument('--momentum', '-lm', type=float, default=0.9, help='Momentum.')
 parser.add_argument('--decay', '-ld', type=float, default=0.001, help='Weight decay (L2 penalty).')
+parser.add_argument('--preparedata', type=bool, default=True, help='Recreate the dataset.')
 
 # Loss network trainer
 parser.add_argument('--lresume', type=int, default=0, help='resume loss from checkpoint')
@@ -95,20 +96,27 @@ a_net = AlexNet().to(device)
 encoder = Encoder().to(device)
 decoder = Decoder().to(device)
 
-print('==> Preparing data..')
-filtered_df = filter_df(None)
-X_train, X_test, y_train, y_test = split_people(filtered_df)
+if(args.preparedata):
+    print('==> Preparing data..')
+    filtered_df = filter_df(None)
+    X_train, X_test, y_train, y_test = split_people(filtered_df)
 
-train_count = Counter(y_train)
-test_count =  Counter(y_test)
-print('==> Creatting segments..')
-X_train, y_train = make_segments(X_train, y_train)
-X_train, _, y_train, _ = train_test_split(X_train, y_train, test_size=0)
+    train_count = Counter(y_train)
+    test_count =  Counter(y_test)
+    print('==> Creatting segments..')
+    X_train, y_train = make_segments(X_train, y_train)
+    X_train, _, y_train, _ = train_test_split(X_train, y_train, test_size=0)
 
-print("==> loading dataset..")
-with open("../save/data2.dat", "wb") as f:
-    data = (X_train, X_test, y_train, y_test)
-    pickle.dump(data, f)
+    print("==> Saving dataset..")
+    with open("../save/dataset/data.dat", "wb") as f:
+        data = (X_train, X_test, y_train, y_test)
+        pickle.dump(data, f)
+else:
+    print("==> Loading dataset..")
+    with open("../save/dataset/data.dat", "rb") as f:
+        (X_train, X_test, y_train, y_test) = pickle.load(f)
+        
+
 
 if(args.lresume):
     with open("../save/transform/logs/lossn_train_loss.log", "w+") as f:
