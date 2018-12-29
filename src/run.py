@@ -25,15 +25,15 @@ parser.add_argument('--batch_size', default=128, type=int)
 parser.add_argument('--resume', '-r', type=int, default=0, help='resume from checkpoint')
 parser.add_argument('--epochs', '-e', type=int, default=10, help='Number of epochs to train.')
 parser.add_argument('--momentum', '-lm', type=float, default=0.9, help='Momentum.')
-parser.add_argument('--decay', '-ld', type=float, default=1e-5, help='Weight decay (L2 penalty).')
+parser.add_argument('--decay', '-ld', type=float, default=0.001, help='Weight decay (L2 penalty).')
 
 # Loss network trainer
 parser.add_argument('--lresume', type=int, default=0, help='resume loss from checkpoint')
-parser.add_argument('--loss_lr', type=float, default=1e-4, help='learning rate')
+parser.add_argument('--loss_lr', type=float, default=0.001, help='learning rate')
 
 # Accent Network trainer
 parser.add_argument('--aresume', type=int, default=0, help='resume accent network from checkpoint')
-parser.add_argument('--accent_lr', type=float, default=1e-3, help='learning rate fro accent network')
+parser.add_argument('--accent_lr', type=float, default=0.001, help='learning rate fro accent network')
 
 args = parser.parse_args()
 
