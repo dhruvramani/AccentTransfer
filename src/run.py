@@ -35,11 +35,11 @@ parser.add_argument('--decay', '-ld', type=float, default=0.001, help='Weight de
 parser.add_argument('--preparedata', type=bool, default=False, help='Recreate the dataset.')
 
 # Loss network trainer
-parser.add_argument('--lresume', type=int, default=0, help='resume loss from checkpoint')
+parser.add_argument('--lresume', type=int, default=1, help='resume loss from checkpoint')
 parser.add_argument('--loss_lr', type=float, default=0.001, help='learning rate')
 
 # Accent Network trainer
-parser.add_argument('--aresume', type=int, default=0, help='resume accent network from checkpoint')
+parser.add_argument('--aresume', type=int, default=1, help='resume accent network from checkpoint')
 parser.add_argument('--accent_lr', type=float, default=0.001
     , help='learning rate fro accent network')
 
@@ -336,14 +336,14 @@ def test():
     print(accuracy.get_accuracy(y_predicted,y_test))
 
 
-# encoder = Encoder().to(device)
-# decoder = Decoder().to(device)
+encoder = Encoder().to(device)
+decoder = Decoder().to(device)
 # for epoch in range(lsepoch, lsepoch + args.epochs):
 #     train_lossn(epoch)
 
 a_net = AlexNet().to(device)
-for epoch in range(asepoch, asepoch + args.epochs):
-    train_accent(epoch)
+# for epoch in range(asepoch, asepoch + args.epochs):
+#     train_accent(epoch)
 
 t_net = Transformation().to(device)
 for epoch in range(tsepoch, tsepoch + args.epochs):
