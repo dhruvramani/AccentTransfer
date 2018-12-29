@@ -86,7 +86,7 @@ def convert_to_mel(audio):
     audio = torch.matmul(meld, audio)
     return audio
 
-best_acc, tsepoch, tstep, lsepoch, lstep, asepoch, astype = 0, 0, 0, 0, 0, 0, 0
+best_acc, tsepoch, tstep, lsepoch, lstep, astep, asepoch, astype = 0, 0, 0, 0, 0, 0, 0, 0
 
 mse = torch.nn.MSELoss() # MaskedMSE()
 criterion = nn.CrossEntropyLoss()
