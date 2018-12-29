@@ -91,10 +91,10 @@ mse = torch.nn.MSELoss() # MaskedMSE()
 criterion = nn.CrossEntropyLoss()
 
 print('==> Creating networks..')
-t_net = Transformation().to(device)
-a_net = AlexNet().to(device)
-encoder = Encoder().to(device)
-decoder = Decoder().to(device)
+t_net = None #Transformation().to(device)
+a_net = None #AlexNet().to(device)
+encoder = None #Encoder().to(device)
+decoder = None #Decoder().to(device)
 
 if(args.preparedata):
     print('==> Preparing data..')
@@ -334,10 +334,17 @@ def test():
     print(accuracy.confusion_matrix(y_predicted, y_test))
     print(accuracy.get_accuracy(y_predicted,y_test))
 
+
+encoder = Encoder().to(device)
+decoder = Decoder().to(device)
 for epoch in range(lsepoch, lsepoch + args.epochs):
     train_lossn(epoch)
+
+a_net = AlexNet().to(device)
 for epoch in range(asepoch, asepoch + args.epochs):
     train_accent(epoch)
+
+t_net = Transformation().to(device)
 for epoch in range(tsepoch, tsepoch + args.epochs):
     train_transformation(epoch)
 
