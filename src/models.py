@@ -180,9 +180,9 @@ class Encoder(torch.nn.Module):
             nn.Conv2d(225, 256, 5, stride=2),  # b, 8, 3, 3
             nn.ReLU(True),
             nn.BatchNorm2d(256),
-            nn.Conv2d(256, 256, 3, stride=2),   # b, 8, 2, 2
-            nn.ReLU(True),
-            nn.BatchNorm2d(256),
+            # nn.Conv2d(256, 256, 3, stride=2),   # b, 8, 2, 2
+            # nn.ReLU(True),
+            # nn.BatchNorm2d(256),
             nn.Conv2d(256, 100, 3, stride=1),   # b, 8, 2, 2
             nn.ReLU(True),
             nn.BatchNorm2d(100)
@@ -198,9 +198,9 @@ class Decoder(torch.nn.Module):
             nn.ConvTranspose2d(100, 256, 3, stride=2),  # b, 16, 5, 5
             nn.ReLU(True),
             nn.BatchNorm2d(256),
-            nn.ConvTranspose2d(256, 256, 5, stride=2),  # b, 16, 5, 5
-            nn.ReLU(True),
-            nn.BatchNorm2d(256),
+            # nn.ConvTranspose2d(256, 256, 5, stride=2),  # b, 16, 5, 5
+            # nn.ReLU(True),
+            # nn.BatchNorm2d(256),
             nn.ConvTranspose2d(256, 256, 11, stride=1),  # b, 16, 5, 5
             nn.ReLU(True),
             nn.BatchNorm2d(256),
@@ -216,8 +216,8 @@ class Transformation(torch.nn.Module):
         super(Transformation, self).__init__()
         self.enc = Encoder()
         self.dec = Decoder()
-        #self.enc.load_state_dict(torch.load('../save/transform/trans_encoder.ckpt'))
-        #self.dec.load_state_dict(torch.load('../save/transform/trans_decoder.ckpt'))
+        self.enc.load_state_dict(torch.load('../save/transform/trans_encoder.ckpt'))
+        self.dec.load_state_dict(torch.load('../save/transform/trans_decoder.ckpt'))
         
     def forward(self, x):
         return self.dec(self.enc(x))

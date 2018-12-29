@@ -12,6 +12,7 @@ import torch.backends.cudnn as cudnn
 from torch.utils.data import DataLoader
 from torchvision.utils import save_image
 from sklearn.model_selection import train_test_split
+import pickle 
 
 import accuracy
 from models import *
@@ -21,7 +22,7 @@ from utils import progress_bar
 
 parser = argparse.ArgumentParser(description='PyTorch Speech Accent Transfer')
 parser.add_argument('--lr', default=0.001, type=float, help='learning rate') # NOTE change for diff models
-parser.add_argument('--batch_size', default=128, type=int)
+parser.add_argument('--batch_size', default=32, type=int)
 parser.add_argument('--resume', '-r', type=int, default=0, help='resume from checkpoint')
 parser.add_argument('--epochs', '-e', type=int, default=10, help='Number of epochs to train.')
 parser.add_argument('--momentum', '-lm', type=float, default=0.9, help='Momentum.')
@@ -49,11 +50,11 @@ def load_audio(audio_path):
 
 def collate_fn(data):
     data = list(filter(lambda x: type(x[1]) != int, data))
-    audios, captions = zip(*data)
+    audio, captions = zip(*data)
     data = None
     del data
-    audios = torch.stack(audios, 0)
-    return audios, captions
+    audio = torch.stack(audio, 0)
+    return audio, captions
 
 def inp_transform(inp):
     inp = inp.numpy()
@@ -90,15 +91,19 @@ a_net = AlexNet().to(device)
 encoder = Encoder().to(device)
 decoder = Decoder().to(device)
 
-print('==> Preparing data..')
-filtered_df = filter_df(None)
-X_train, X_test, y_train, y_test = split_people(filtered_df)
+# print('==> Preparing data..')
+# filtered_df = filter_df(None)
+# X_train, X_test, y_train, y_test = split_people(filtered_df)
 
-train_count = Counter(y_train)
-test_count =  Counter(y_test)
-print('==> Creatting segments..')
-X_train, y_train = make_segments(X_train, y_train)
-X_train, _, y_train, _ = train_test_split(X_train, y_train, test_size=0)
+# train_count = Counter(y_train)
+# test_count =  Counter(y_test)
+# print('==> Creatting segments..')
+# X_train, y_train = make_segments(X_train, y_train)
+# X_train, _, y_train, _ = train_test_split(X_train, y_train, test_size=0)
+
+print("==> loading dataset..")
+with open("../save/data.dat", "rb") as f:
+    (X_train, X_test, y_train, y_test) = pickle.load(f)
 
 if(args.lresume):
     with open("../save/transform/logs/lossn_train_loss.log", "w+") as f:
@@ -197,19 +202,21 @@ def train_lossn(epoch):
     optimizer = torch.optim.Adam(params, lr=args.loss_lr)
     
     for i in range(lstep, len(dataloader)):
-        (audios, captions) = next(dataloader)
+        (audio, captions) = next(dataloader)
         
         del captions
+        audio = audio.to(device)
         # Might have to remove the loop,, memory
         latent_space = encoder(audio)
         output = decoder(latent_space)
         optimizer.zero_grad()
-        loss = mse(output, audio)
+        loss = mse(output[:,:,:-1,:-1], audio)
         loss.backward()
         optimizer.step()
-
-        del audios
+        
         train_loss += loss.item()
+
+        del audio, latent_space, output, loss
 
         with open("../save/loss/logs/lossn_train_loss.log", "a+") as lfile:
             lfile.write("{}\n".format(train_loss / (i - lstep +1)))
@@ -254,8 +261,10 @@ def train_transformation(epoch):
 
     alpha, beta = 7.5, 100 # TODO : CHANGEd from 7.5, 100
     for i in range(tstep, len(dataloader)):
-        (audios, captions) = next(dataloader)
+        (audio, captions) = next(dataloader)
         del captions
+        audio = audio.to(device)
+
         optimizer.zero_grad()
         y_t = t_net(audio)
 
@@ -273,7 +282,7 @@ def train_transformation(epoch):
         loss.backward()
         optimizer.step()
 
-        del audios
+        del audio
 
         gc.collect()
         torch.cuda.empty_cache()
@@ -307,9 +316,9 @@ def test():
     print(accuracy.confusion_matrix(y_predicted, y_test))
     print(accuracy.get_accuracy(y_predicted,y_test))
 
-for epoch in range(lsepoch, lsepoch + args.epoch):
+for epoch in range(lsepoch, lsepoch + args.epochs):
     train_lossn(epoch)
-for epoch in range(asepoch, asepoch + args.epoch):
+for epoch in range(asepoch, asepoch + args.epochs):
     train_accent(epoch)
 for epoch in range(tsepoch, tsepoch + args.epochs):
     train_transformation(epoch)
