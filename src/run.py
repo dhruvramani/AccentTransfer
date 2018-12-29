@@ -336,10 +336,10 @@ def test():
     print(accuracy.get_accuracy(y_predicted,y_test))
 
 
-encoder = Encoder().to(device)
-decoder = Decoder().to(device)
-for epoch in range(lsepoch, lsepoch + args.epochs):
-    train_lossn(epoch)
+# encoder = Encoder().to(device)
+# decoder = Decoder().to(device)
+# for epoch in range(lsepoch, lsepoch + args.epochs):
+#     train_lossn(epoch)
 
 a_net = AlexNet().to(device)
 for epoch in range(asepoch, asepoch + args.epochs):
