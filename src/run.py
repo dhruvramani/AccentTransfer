@@ -8,6 +8,7 @@ import numpy as np
 from collections import Counter
 import torch.nn.functional as F
 from torch.autograd import Variable
+import torch.optim as optim
 import torch.backends.cudnn as cudnn
 from torch.utils.data import DataLoader
 from torchvision.utils import save_image
