@@ -216,6 +216,7 @@ class Transformation(torch.nn.Module):
         super(Transformation, self).__init__()
         self.enc = Encoder()
         self.dec = Decoder()
+        if(os.pa)
         self.enc.load_state_dict(torch.load('../save/transform/trans_encoder.ckpt'))
         self.dec.load_state_dict(torch.load('../save/transform/trans_decoder.ckpt'))
         
