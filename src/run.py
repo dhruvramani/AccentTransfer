@@ -289,7 +289,7 @@ def train_transformation(epoch):
 
         content = conten_activ(audio)
         y_c = conten_activ(y_t)
-        c_loss = mse(y_c, content)
+        c_loss = mse(y_c[:, :, :-1, :-1], content)
 
         y_a, y_apred = a_net(audio), a_net(y_t)
         a_loss = criterion(y_apred, y_a)
