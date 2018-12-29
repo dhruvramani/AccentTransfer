@@ -302,6 +302,11 @@ def train_transformation(epoch, accent_idx=2):
         loss.backward()
         optimizer.step()
 
+        a1 = audio[0].cpu().numpy()
+        a2 = y_t[0].detach().cpu().numpy()
+        matplotlib.image.imsave('../save/plots/transform/before.png', a1[0])
+        matplotlib.image.imsave('../save/plots/transform/after.png', a2[0])
+
         del audio
 
         gc.collect()
