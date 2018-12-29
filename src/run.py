@@ -224,7 +224,7 @@ def train_lossn(epoch):
         latent_space = encoder(audio)
         output = decoder(latent_space)
         optimizer.zero_grad()
-        loss = mse(output, audio[:,:,:-3,:-3])
+        loss = mse(output[:,:,:-1,:-1], audio)
         loss.backward()
         optimizer.step()
 
