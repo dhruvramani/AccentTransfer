@@ -27,11 +27,17 @@ def collate_fn(data):
     audios = torch.stack(audios, 0)
     return audios, captions
 
+def mel_transform(S, fs=48000):
+    mel = librosa.filters.mel(fs, N_FFT)
+    return  mel # shit sors
+
 def inp_transform(inp):
     inp = inp.numpy()
     inp = inp.astype(np.float32)
     inp = inp.flatten()
     inp, phase = transform_stft(inp, pad=False)
+    mel = mel_transform(inp)
+    inp = np.matmul(mel, inp)
     inp = torch.Tensor(inp)
     inp = inp.unsqueeze(0)
     inp = inp.unsqueeze(0)
