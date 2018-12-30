@@ -332,7 +332,7 @@ def test():
     # TODO : Test Later
     print('==> Testing network..')
     # Make predictions on full X_test mels
-    y_predicted = accuracy.predict_class_all(create_segmented_mels(X_test), net)
+    y_predicted = accuracy.predict_class_all(create_segmented_mels(X_test), AlexNet)
 
     # Print statistics
     print(train_count)
