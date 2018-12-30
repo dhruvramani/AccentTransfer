@@ -32,7 +32,7 @@ parser.add_argument('--resume', '-r', type=int, default=0, help='resume from che
 parser.add_argument('--epochs', '-e', type=int, default=10, help='Number of epochs to train.')
 parser.add_argument('--momentum', '-lm', type=float, default=0.9, help='Momentum.')
 parser.add_argument('--decay', '-ld', type=float, default=0.001, help='Weight decay (L2 penalty).')
-parser.add_argument('--preparedata', type=bool, default=False, help='Recreate the dataset.')
+parser.add_argument('--preparedata', type=bool, default=True, help='Recreate the dataset.')
 
 # Loss network trainer
 parser.add_argument('--lresume', type=int, default=1, help='resume loss from checkpoint')

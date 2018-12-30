@@ -54,17 +54,45 @@ def filter_df(df):
     '''
 
     # Example to filter arabic, mandarin, and english and limit to 73 audio files
+    df = pd.read_csv('data.csv')
+    LIMIT, GENDER = 74, 'female'
+
     arabic,arabicy = [],[]
     mandarin,mandariny = [],[]
     english,englishy = [],[]
     
-    for i in range(79):
-        english.append(to_mel(get_wav("english"+str(i+1))))
-        englishy.append(1)
-        mandarin.append(to_mel(get_wav("mandarin"+str(i+1))))
-        mandariny.append(2)
-        arabic.append(to_mel(get_wav("arabic"+str(i+1))))
-        arabicy.append(0)
+    a,e,m =0,0,0
+    for i in range(df.shape[0]):
+        row = df.iloc[[i]]
+        try:
+            if(str(row['sex']).split()[1] == GENDER):
+                file = str(row['language_num']).split()[1]
+                if(file[0] == 'a' and a < LIMIT):
+                    arabic.append(to_mel(get_wav(file)))
+                    arabicy.append(0)
+                    a+=1
+
+                elif(file[0] == 'e' and e < LIMIT):
+                    english.append(to_mel(get_wav(file)))
+                    englishy.append(1)
+                    e+=1
+
+                elif(file[0] == 'm' and m < LIMIT):
+                    mandarin.append(to_mel(get_wav(file)))
+                    mandariny.append(2)
+                    m+=1
+        except Exception as e:
+            print(str(e))
+
+
+
+    # for i in range(79):
+    #     english.append(to_mel(get_wav("english"+str(i+1))))
+    #     englishy.append(1)
+    #     mandarin.append(to_mel(get_wav("mandarin"+str(i+1))))
+    #     mandariny.append(2)
+    #     arabic.append(to_mel(get_wav("arabic"+str(i+1))))
+    #     arabicy.append(0)
 
     val = english + arabic + mandarin
     val2 = englishy + arabicy + mandariny
