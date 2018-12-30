@@ -342,17 +342,17 @@ def test():
     print(accuracy.get_accuracy(y_predicted,y_test))
 
 
-encoder = Encoder().to(device)
-decoder = Decoder().to(device)
-for epoch in range(lsepoch, lsepoch + args.epochs):
-    train_lossn(epoch)
+# encoder = Encoder().to(device)
+# decoder = Decoder().to(device)
+# for epoch in range(lsepoch, lsepoch + args.epochs):
+#     train_lossn(epoch)
 
 a_net = AlexNet().to(device)
 for epoch in range(asepoch, asepoch + args.epochs):
     train_accent(epoch)
 
-t_net = Transformation().to(device)
-for epoch in range(tsepoch, tsepoch + args.epochs):
-    train_transformation(epoch)
+# t_net = Transformation().to(device)
+# for epoch in range(tsepoch, tsepoch + args.epochs):
+#     train_transformation(epoch)
 
 #test()
