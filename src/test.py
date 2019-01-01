@@ -65,7 +65,7 @@ def main():
     matplotlib.image.imsave('../save/plots/input/audio.png', audio[0])
     matplotlib.image.imsave('../save/plots/output/stylized_audio.png', out[0])
     aud_res = reconstruction(audio[0], phase, mel)
-    out_res = reconstruction(out[0][:-2, :-1], phase, mel)#[:, :-3])
+    out_res = reconstruction(out[0][:-1, :-1], phase, mel)#[:, :-3])
     librosa.output.write_wav("../save/plots/input/raw_audio.wav", aud_res, fs)
     librosa.output.write_wav("../save/plots/output/raw_output.wav", out_res, fs)
     #invert_spectrogram(audio[0], audio[0], fs, '../save/plots/output/raw_audio.wav')
