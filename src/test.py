@@ -41,7 +41,7 @@ def inp_transform(inp):
     inp = torch.Tensor(inp)
     inp = inp.unsqueeze(0)
     inp = inp.unsqueeze(0)
-    return inp, phase
+    return inp, phase, mel
 
 def main():
 
@@ -56,7 +56,7 @@ def main():
     audio, fs = load_audio('/home/nevronas/dataset/accent/recordings/english1.wav')
     #style, fz = load_audio("/home/nevronas/Projects/Nevronas-Projects/Audio/AudioStyleTransfer/save/style/style_lady.wav")
     audio = torch.Tensor(audio)#, torch.Tensor(style)
-    audio, phase = inp_transform(audio)
+    audio, phase, mel = inp_transform(audio)
     #style, _ = inp_transform(style)
     audio = audio.to(device)
     out = trans_net(audio)
@@ -64,8 +64,8 @@ def main():
     audio = audio[0].cpu().numpy()
     matplotlib.image.imsave('../save/plots/input/audio.png', audio[0])
     matplotlib.image.imsave('../save/plots/output/stylized_audio.png', out[0])
-    aud_res = reconstruction(audio[0], phase)
-    out_res = reconstruction(out[0][:-2, :-1], phase)#[:, :-3])
+    aud_res = reconstruction(audio[0], phase, mel)
+    out_res = reconstruction(out[0][:-2, :-1], phase, mel)#[:, :-3])
     librosa.output.write_wav("../save/plots/input/raw_audio.wav", aud_res, fs)
     librosa.output.write_wav("../save/plots/output/raw_output.wav", out_res, fs)
     #invert_spectrogram(audio[0], audio[0], fs, '../save/plots/output/raw_audio.wav')

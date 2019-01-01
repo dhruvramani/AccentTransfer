@@ -109,8 +109,9 @@ def split_people(df,test_size=0.2):
     '''
     return train_test_split(df['wav'],df['native_language'],test_size=test_size,random_state=1234)
 
-def reconstruction(S, phase):
-    exp = np.expm1(S)
+def reconstruction(S, phase, mel):
+    S1=np.matmul( np.transpose(mel) , S)
+    exp = np.expm1(S1)
     comple = exp * np.exp(phase)
     istft = librosa.istft(comple)
     return istft 
