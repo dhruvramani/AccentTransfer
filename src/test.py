@@ -47,13 +47,13 @@ def main():
 
     trans_net = Transformation()
     trans_net = trans_net.to(device)
-    trans_net.load_state_dict(torch.load('../save/success/darth_wader_run/network.ckpt'))
+    trans_net.load_state_dict(torch.load('../save/transform/network.ckpt'))
     
     #vdataset = ('/home/nevronas/dataset/', download=False)
     #dataloader = DataLoader(vdataset, batch_size=1)
 
     #audio, _ = next(iter(dataloader))
-    audio, fs = load_audio('/home/nevronas/dataset/accent/recordings/english1.wav')
+    audio, fs = load_audio('/home/nevronas/dataset/accent/recordings/english2.wav')
     #style, fz = load_audio("/home/nevronas/Projects/Nevronas-Projects/Audio/AudioStyleTransfer/save/style/style_lady.wav")
     audio = torch.Tensor(audio)#, torch.Tensor(style)
     audio, phase, mel = inp_transform(audio)
