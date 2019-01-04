@@ -114,7 +114,7 @@ def reconstruction(S, phase, mel):
     exp = np.expm1(S1)
     comple = exp * np.exp(phase)
     istft = librosa.istft(comple)
-    return istft * 1000
+    return istft * 10000
 
 def invert_spectrogram(result, a_content, outpath, fs=48000):
     a = np.zeros_like(a_content)
