@@ -278,7 +278,7 @@ def train_transformation(epoch, accent_idx=2):
     for param in a_net.parameters():
         param.requires_grad = False
 
-    alpha, beta = 200, 10000 # TODO : CHANGEd from 7.5, 100
+    alpha, beta = 400, 10000 # TODO : CHANGEd from 7.5, 100
     for i in range(tstep, len(dataloader)):
         (audio, captions) = next(dataloader)
         del captions
