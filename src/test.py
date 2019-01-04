@@ -63,6 +63,12 @@ def main():
     out = trans_net(audio)
     out = out[0].detach().cpu().numpy()
     audio = audio[0].cpu().numpy()
+
+    with open("../save/plots/output/input_np.dat" ,"wb") as f:
+        np.save(f, audio[0])
+    with open("../save/plots/output/output_np.dat" ,"wb") as f:
+        np.save(f, out[0])
+
     matplotlib.image.imsave('../save/plots/input/audio.png', audio[0])
     matplotlib.image.imsave('../save/plots/output/stylized_audio.png', out[0])
     aud_res = reconstruction(audio[0], phase, mel)
