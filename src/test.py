@@ -48,7 +48,7 @@ def main():
     trans_net = Transformation()
     trans_net = trans_net.to(device)
     trans_net.load_state_dict(torch.load('../save/transform/network.ckpt'))
-    trans_net.load_state_dict(torch.load('../save/success/darth_wader_run/network_101.ckpt'))
+    trans_net.load_state_dict(torch.load('../save/transform/network.ckpt'))
     
     #vdataset = ('/home/nevronas/dataset/', download=False)
     #dataloader = DataLoader(vdataset, batch_size=1)
