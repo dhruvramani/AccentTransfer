@@ -43,6 +43,10 @@ def inp_transform(inp):
     inp = inp.unsqueeze(0)
     return inp, phase, mel
 
+def denoise(nparr):
+    sub = nparr[:, 540:550]
+    return nparr - mean(sub)
+
 def main():
 
     trans_net = Transformation()
@@ -63,16 +67,13 @@ def main():
     out = trans_net(audio)
     out = out[0].detach().cpu().numpy()
     audio = audio[0].cpu().numpy()
-
-    with open("../save/plots/output/input_np.dat" ,"wb") as f:
-        np.save(f, audio[0])
-    with open("../save/plots/output/output_np.dat" ,"wb") as f:
-        np.save(f, out[0])
-
+    out2 = denoise(out)
     matplotlib.image.imsave('../save/plots/input/audio.png', audio[0])
     matplotlib.image.imsave('../save/plots/output/stylized_audio.png', out[0])
+    matplotlib.image.imsave('../save/plots/output/denoised_audio.png', out2[0])
     aud_res = reconstruction(audio[0], phase, mel)
     out_res = reconstruction(out[0][:-1, :-1], phase, mel)#[:, :-3])
+    out_res = denoise(out_res)
     librosa.output.write_wav("../save/plots/input/raw_audio.wav", aud_res, fs)
     librosa.output.write_wav("../save/plots/output/raw_output.wav", out_res, fs)
     #invert_spectrogram(audio[0], audio[0], fs, '../save/plots/output/raw_audio.wav')
@@ -82,8 +83,11 @@ def main():
     # Print out the image and the generated caption
     
     '''
-    image = Image.open(args.image)
-    plt.imshow(np.asarray(image))
+    Save as numpy array
+    with open("../save/plots/output/input_np.dat" ,"wb") as f:
+        np.save(f, audio[0])
+    with open("../save/plots/output/output_np.dat" ,"wb") as f:
+        np.save(f, out[0])
     '''
     
 if __name__ == '__main__':
