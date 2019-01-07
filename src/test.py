@@ -70,7 +70,7 @@ def main():
     out2 = denoise(out[0])
     matplotlib.image.imsave('../save/plots/input/audio.png', audio[0])
     matplotlib.image.imsave('../save/plots/output/stylized_audio.png', out[0])
-    matplotlib.image.imsave('../save/plots/output/denoised_audio.png', out2[0])
+    matplotlib.image.imsave('../save/plots/output/denoised_audio.png', out2)
     aud_res = reconstruction(audio[0], phase, mel)
     out_res = reconstruction(out[0][:-1, :-1], phase, mel)#[:, :-3])
     #out_res = denoise(out_res)
@@ -84,6 +84,10 @@ def main():
     
     '''
     Save as numpy array
+    with open("../save/plots/output/input_np.dat" ,"wb") as f:
+        np.save(f, audio[0])
+    with open("../save/plots/output/output_np.dat" ,"wb") as f:
+        np.save(f, out[0])
     '''
     
 if __name__ == '__main__':
