@@ -45,7 +45,7 @@ def inp_transform(inp):
 
 def denoise(nparr):
     sub = nparr[:, 540:550]
-    return nparr - mean(sub)
+    return nparr - np.mean(sub)
 
 def main():
 
