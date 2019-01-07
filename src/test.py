@@ -73,9 +73,7 @@ def main():
     matplotlib.image.imsave('../save/plots/output/denoised_audio.png', out2)
     aud_res = reconstruction(audio[0], phase, mel)
     out_res = reconstruction(out[0][:-1, :-1], phase, mel)#[:, :-3])
-    #out_res = denoise(out_res)
-    with open("../save/plots/output/output_np.dat" ,"wb") as f:
-        np.save(f, out_res)
+    out_res = denoise(out_res)
     librosa.output.write_wav("../save/plots/input/raw_audio.wav", aud_res, fs)
     librosa.output.write_wav("../save/plots/output/raw_output.wav", out_res, fs)
     #invert_spectrogram(audio[0], audio[0], fs, '../save/plots/output/raw_audio.wav')
