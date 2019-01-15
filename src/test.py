@@ -111,9 +111,11 @@ def main():
 
     #New stuff
 
-    audio, sampleRate = loadAudioFile(english2)
+    audio, sampleRate = loadAudioFile("english2")
     audio, phase = audioFileToSpectrogram(audio)
     audio = torch.Tensor(audio)
+    audio = audio.unsqueeze(0)
+    audio = audio.unsqueeze(0)
     audio = audio.to(device)
     out = trans_net(audio)
     out = out[0].detach().cpu().numpy()
