@@ -13,6 +13,8 @@ from models import *
 from dataset import *
 from torch.utils.data import DataLoader
 
+from new_feature import *
+
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 def load_audio(audio_path):
@@ -70,29 +72,29 @@ def main():
     #dataloader = DataLoader(vdataset, batch_size=1)
 
     #audio, _ = next(iter(dataloader))
-    audio, fs = load_audio('/home/nevronas/dataset/accent/recordings/english2.wav')
-    target_audio, target_fs = load_audio('/home/nevronas/dataset/accent/manda.wav')
-    #style, fz = load_audio("/home/nevronas/Projects/Nevronas-Projects/Audio/AudioStyleTransfer/save/style/style_lady.wav")
-    audio = torch.Tensor(audio)#, torch.Tensor(style)
-    audio, phase, mel = inp_transform(audio)
-    target_audio = torch.Tensor(target_audio)#, torch.Tensor(style)
-    target_audio, target_phase, target_mel = inp_transform(target_audio)
-    #style, _ = inp_transform(style)
-    audio = audio.to(device)
-    out = trans_net(audio)
-    out = out[0].detach().cpu().numpy()
-    audio = audio[0].cpu().numpy()
-    #out2 = denoise(out[0])
-    target_audio = target_audio[0].cpu().numpy()
-    matplotlib.image.imsave('../save/plots/input/input_audio.png', audio[0])
-    matplotlib.image.imsave('../save/plots/output/accented_audio.png', out[0])
+    # audio, fs = load_audio('/home/nevronas/dataset/accent/recordings/english2.wav')
+    # target_audio, target_fs = load_audio('/home/nevronas/dataset/accent/manda.wav')
+    # #style, fz = load_audio("/home/nevronas/Projects/Nevronas-Projects/Audio/AudioStyleTransfer/save/style/style_lady.wav")
+    # audio = torch.Tensor(audio)#, torch.Tensor(style)
+    # audio, phase, mel = inp_transform(audio)
+    # target_audio = torch.Tensor(target_audio)#, torch.Tensor(style)
+    # target_audio, target_phase, target_mel = inp_transform(target_audio)
+    # #style, _ = inp_transform(style)
+    # audio = audio.to(device)
+    # out = trans_net(audio)
+    # out = out[0].detach().cpu().numpy()
+    # audio = audio[0].cpu().numpy()
+    # #out2 = denoise(out[0])
+    # target_audio = target_audio[0].cpu().numpy()
+    # matplotlib.image.imsave('../save/plots/input/input_audio.png', audio[0])
+    # matplotlib.image.imsave('../save/plots/output/accented_audio.png', out[0])
     
-    matplotlib.image.imsave('../save/plots/output/target_audio.png', target_audio[0])
-    aud_res = reconstruction(audio[0], phase, mel)
-    out_res = reconstruction(out[0][:-1, :-1], phase, mel)#[:, :-3])
-    #out_res = denoise(out_res)
-    librosa.output.write_wav("../save/plots/input/raw_audio.wav", aud_res, fs)
-    librosa.output.write_wav("../save/plots/output/raw_output.wav", out_res, fs)
+    # matplotlib.image.imsave('../save/plots/output/target_audio.png', target_audio[0])
+    # aud_res = reconstruction(audio[0], phase, mel)
+    # out_res = reconstruction(out[0][:-1, :-1], phase, mel)#[:, :-3])
+    # #out_res = denoise(out_res)
+    # librosa.output.write_wav("../save/plots/input/raw_audio.wav", aud_res, fs)
+    # librosa.output.write_wav("../save/plots/output/raw_output.wav", out_res, fs)
     #invert_spectrogram(audio[0], audio[0], fs, '../save/plots/output/raw_audio.wav')
 
     #matplotlib.image.imsave('out.png', out[0])
@@ -106,6 +108,20 @@ def main():
     with open("../save/plots/output/output_np.dat" ,"wb") as f:
         np.save(f, out[0])
     '''
+
+    #New stuff
+
+    audio, sampleRate = loadAudioFile(english2)
+    audio, phase = audioFileToSpectrogram(audio)
+    audio = torch.Tensor(audio)
+    audio = audio.to(device)
+    out = trans_net(audio)
+    out = out[0].detach().cpu().numpy()
+    saveSpectrogram(out[0], "../save/plots/output/accented_audio.png")
+    out = spectrogramToAudioFile(out[0])
+    saveAudioFile(out[0], "../save/plots/output/raw_output.wav", sampleRate)
+    
+        
     
 if __name__ == '__main__':
     main()
