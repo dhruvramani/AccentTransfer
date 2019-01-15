@@ -53,6 +53,11 @@ def confusion_matrix(y_predicted,y_test):
     for i in range(len(y_test)):
         y_pred.append(y_predicted[i].cpu().item())
     # print(y_test, y_predicted, y_pred)
+    acc = 0
+    for i in range(len(y_test)):
+        if(y_test[i]==y_pred[i]):
+            acc +=1
+    print("Accuracy : ",acc,len(y_test))
     y_test , y_predicted = y_test, y_pred
     confusion_matrix = np.zeros((len(y_test),len(y_test)),dtype=int )
     for index, predicted in enumerate(y_pred):

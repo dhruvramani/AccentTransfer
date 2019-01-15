@@ -26,7 +26,18 @@ def collate_fn(data):
     del data
     audios = torch.stack(audios, 0)
     return audios, captions
-
+'''
+def reconstruction(S, phase, mel):
+    S1=np.matmul( np.transpose(mel) , S)
+    exp = np.expm1(S1)
+    arr=exp[:,540:550]
+    exp1=exp-(np.mean(arr)+10*np.std(arr))
+    #print((np.mean(arr)+10*np.std(arr)))
+    matplotlib.image.imsave('../save/plots/output/denoised_audio.png', exp1)
+    comple = exp1 * np.exp(phase)
+    istft = librosa.istft(comple)
+    return istft * 10000
+'''
 def mel_transform(S, fs=48000):
     mel = librosa.filters.mel(fs, N_FFT)
     return  mel # shit sors
@@ -44,8 +55,9 @@ def inp_transform(inp):
     return inp, phase, mel
 
 def denoise(nparr, val=540):
-    sub = nparr[:, val:val+10]
-    return nparr - np.mean(sub) + 3 * np.std(sub)
+    sub = nparr[:,val:val+10]#10
+    return nparr - (np.mean(sub) + 3 * np.std(sub))
+    #print(nparr.shape)
 
 def main():
 
@@ -59,21 +71,26 @@ def main():
 
     #audio, _ = next(iter(dataloader))
     audio, fs = load_audio('/home/nevronas/dataset/accent/recordings/english2.wav')
+    target_audio, target_fs = load_audio('/home/nevronas/dataset/accent/manda.wav')
     #style, fz = load_audio("/home/nevronas/Projects/Nevronas-Projects/Audio/AudioStyleTransfer/save/style/style_lady.wav")
     audio = torch.Tensor(audio)#, torch.Tensor(style)
     audio, phase, mel = inp_transform(audio)
+    target_audio = torch.Tensor(target_audio)#, torch.Tensor(style)
+    target_audio, target_phase, target_mel = inp_transform(target_audio)
     #style, _ = inp_transform(style)
     audio = audio.to(device)
     out = trans_net(audio)
     out = out[0].detach().cpu().numpy()
     audio = audio[0].cpu().numpy()
-    out2 = denoise(out[0])
-    matplotlib.image.imsave('../save/plots/input/audio.png', audio[0])
-    matplotlib.image.imsave('../save/plots/output/stylized_audio.png', out[0])
-    matplotlib.image.imsave('../save/plots/output/denoised_audio.png', out2)
+    #out2 = denoise(out[0])
+    target_audio = target_audio[0].cpu().numpy()
+    matplotlib.image.imsave('../save/plots/input/input_audio.png', audio[0])
+    matplotlib.image.imsave('../save/plots/output/accented_audio.png', out[0])
+    
+    matplotlib.image.imsave('../save/plots/output/target_audio.png', target_audio[0])
     aud_res = reconstruction(audio[0], phase, mel)
     out_res = reconstruction(out[0][:-1, :-1], phase, mel)#[:, :-3])
-    out_res = denoise(out_res)
+    #out_res = denoise(out_res)
     librosa.output.write_wav("../save/plots/input/raw_audio.wav", aud_res, fs)
     librosa.output.write_wav("../save/plots/output/raw_output.wav", out_res, fs)
     #invert_spectrogram(audio[0], audio[0], fs, '../save/plots/output/raw_audio.wav')

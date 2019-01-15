@@ -6,7 +6,7 @@ import torch
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
-N_FFT = 1024
+N_FFT = 512
 
 def get_wav(language_num):
     '''

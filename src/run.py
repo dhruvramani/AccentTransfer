@@ -27,16 +27,16 @@ import matplotlib
 
 parser = argparse.ArgumentParser(description='PyTorch Speech Accent Transfer')
 parser.add_argument('--lr', default=0.001, type=float, help='learning rate') # NOTE change for diff models
-parser.add_argument('--batch_size', default=32, type=int)
-parser.add_argument('--resume', '-r', type=int, default=1, help='resume from checkpoint')
-parser.add_argument('--epochs', '-e', type=int, default=20, help='Number of epochs to train.')
+parser.add_argument('--batch_size', default=40, type=int)
+parser.add_argument('--resume', '-r', type=int, default=0, help='resume from checkpoint')
+parser.add_argument('--epochs', '-e', type=int, default=15, help='Number of epochs to train.')
 parser.add_argument('--momentum', '-lm', type=float, default=0.9, help='Momentum.')
 parser.add_argument('--decay', '-ld', type=float, default=0.001, help='Weight decay (L2 penalty).')
-parser.add_argument('--preparedata', type=bool, default=False, help='Recreate the dataset.')
+parser.add_argument('--preparedata', type=bool, default=0, help='Recreate the dataset.')
 
 # Loss network trainer
 parser.add_argument('--lresume', type=int, default=1, help='resume loss from checkpoint')
-parser.add_argument('--loss_lr', type=float, default=0.001, help='learning rate')
+parser.add_argument('--loss_lr', type=float, default=0.0001, help='learning rate')
 
 # Accent Network trainer
 parser.add_argument('--aresume', type=int, default=1, help='resume accent network from checkpoint')
@@ -339,17 +339,17 @@ def test():
     print(accuracy.confusion_matrix(y_predicted, y_test))
     print(accuracy.get_accuracy(y_predicted,y_test))
 
+'''
+encoder = Encoder().to(device)
+decoder = Decoder().to(device)
+for epoch in range(lsepoch, lsepoch + args.epochs):
+    train_lossn(epoch)
 
-# encoder = Encoder().to(device)
-# decoder = Decoder().to(device)
-# for epoch in range(lsepoch, lsepoch + args.epochs):
-#     train_lossn(epoch)
-
-# a_net = AlexNet().to(device)
-# for epoch in range(asepoch, asepoch + args.epochs):
-#     train_accent(epoch)
-#     test()
-
+a_net = AlexNet().to(device)
+for epoch in range(asepoch, asepoch + args.epochs):
+    train_accent(epoch)
+    test()
+'''
 t_net = Transformation().to(device)
 for epoch in range(tsepoch, tsepoch + args.epochs):
     train_transformation(epoch)
