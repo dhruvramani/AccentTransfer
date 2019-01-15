@@ -5,8 +5,7 @@ import warnings
 import skimage.io as io
 from os.path import basename
 from math import ceil
-import argparse
-import console
+
 
 FFT = 1536
 ITER = 10
@@ -31,6 +30,7 @@ def audioFileToSpectrogram(audioFile, fftWindowSize = FFT):
     spectrogram = librosa.stft(audioFile, fftWindowSize)
     phase = np.imag(spectrogram)
     amplitude = np.log1p(np.abs(spectrogram))
+    print(amplitude.shape)
     return amplitude, phase
 
 # This is the nutty one
