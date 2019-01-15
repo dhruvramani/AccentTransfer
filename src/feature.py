@@ -6,6 +6,8 @@ import torch
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
+from new_feature import *
+
 N_FFT = 512
 
 def get_wav(language_num):
@@ -69,17 +71,35 @@ def filter_df(df):
             if(str(row['sex']).split()[1] == GENDER):
                 file = str(row['language_num']).split()[1]
                 if(file[0] == 'a' and a < LIMIT):
-                    arabic.append(to_mel(get_wav(file)))
+
+                    audio, sampleRate = loadAudioFile(file)
+                    spectrogram, phase = audioFileToSpectrogram(audio)
+                    arabic.append(spectrogram)
+                    del audio, spectrogram, sampleRate, phase
+
+                    # arabic.append(to_mel(get_wav(file)))
                     arabicy.append(0)
                     a+=1
 
                 elif(file[0] == 'e' and e < LIMIT):
-                    english.append(to_mel(get_wav(file)))
+
+                    audio, sampleRate = loadAudioFile(file)
+                    spectrogram, phase = audioFileToSpectrogram(audio)
+                    english.append(spectrogram)
+                    del audio, spectrogram, sampleRate, phase
+
+                    # english.append(to_mel(get_wav(file)))
                     englishy.append(1)
                     e+=1
 
                 elif(file[0] == 'm' and m < LIMIT):
-                    mandarin.append(to_mel(get_wav(file)))
+
+                    audio, sampleRate = loadAudioFile(file)
+                    spectrogram, phase = audioFileToSpectrogram(audio)
+                    mandarin.append(spectrogram)
+                    del audio, spectrogram, sampleRate, phase
+
+                    # mandarin.append(to_mel(get_wav(file)))
                     mandariny.append(2)
                     m+=1
         except Exception as e:
