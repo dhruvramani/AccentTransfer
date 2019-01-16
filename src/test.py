@@ -120,8 +120,8 @@ def main():
     out = trans_net(audio)
     out = out[0].detach().cpu().numpy()
     saveSpectrogram(out[0], "../save/plots/output/accented_audio.png")
-    out = spectrogramToAudioFile(out[0])
-    saveAudioFile(out[0], "../save/plots/output/raw_output.wav", sampleRate)
+    out = spectrogramToAudioFile(out[0], phase=phase)
+    saveAudioFile(out, "../save/plots/output/raw_output.wav", sampleRate)
     
         
     

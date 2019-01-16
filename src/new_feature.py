@@ -39,7 +39,7 @@ def spectrogramToAudioFile(spectrogram, fftWindowSize = FFT, phaseIterations=10,
         # reconstructing the new complex matrix
         squaredAmplitudeAndSquaredPhase = np.power(spectrogram, 2)
         squaredPhase = np.power(phase, 2)
-        unexpd = np.sqrt(np.max(squaredAmplitudeAndSquaredPhase - squaredPhase, 0))
+        unexpd = np.sqrt(np.max(squaredAmplitudeAndSquaredPhase[:-2,:-2] - squaredPhase, 0))
         amplitude = np.expm1(unexpd)
         stftMatrix = amplitude + phase * 1j
         audio = librosa.istft(stftMatrix)
