@@ -299,7 +299,7 @@ def train_transformation(epoch, accent_idx=2):
 
         loss = alpha * c_loss + beta * a_loss 
 
-        train_loss, tr_con, tr_acc = loss.item(), c_loss.item(), a_loss.item()
+        train_loss, tr_con, tr_acc = train_loss + loss.item(), tr_con + c_loss.item(), tr_acc + a_loss.item()
         
         loss.backward()
         optimizer.step()
@@ -319,15 +319,15 @@ def train_transformation(epoch, accent_idx=2):
             f.write("{} {}".format(epoch, i))
 
         with open("../save/transform/logs/transform_train_loss.log", "a+") as lfile:
-            lfile.write("{}\n".format(train_loss))
+            lfile.write("{}\n".format(loss))
 
         with open("../save/transform/info.txt", "w+") as f:
             f.write("{} {}".format(epoch, i))
 
-        progress_bar(i, len(dataloader), 'Loss: {}, Con Loss: {}, Acc Loss: {} '.format(train_loss, tr_con, tr_acc))
+        progress_bar(i, len(dataloader), 'Loss: {}, Con Loss: {}, Acc Loss: {} '.format(loss, c_loss, a_loss))
 
     tstep = 0
-    print('=> Transformation Network : Epoch [{}/{}], Loss:{:.4f}'.format(epoch + 1, args.epochs, train_loss))
+    print('=> Transformation Network : Epoch [{}/{}], Loss:{:.4f}'.format(epoch + 1, args.epochs, train_loss / len(dataloader)))
 
 
 def test():
