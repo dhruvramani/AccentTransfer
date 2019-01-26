@@ -109,8 +109,6 @@ def filter_df(df):
         except Exception as e:
             print(str(e))
 
-
-
     # for i in range(79):
     #     english.append(to_mel(get_wav("english"+str(i+1))))
     #     englishy.append(1)

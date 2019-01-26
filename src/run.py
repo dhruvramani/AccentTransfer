@@ -33,16 +33,23 @@ parser.add_argument('--resume', '-r', type=int, default=1, help='resume from che
 parser.add_argument('--epochs', '-e', type=int, default=15, help='Number of epochs to train.')
 parser.add_argument('--momentum', '-lm', type=float, default=0.9, help='Momentum.')
 parser.add_argument('--decay', '-ld', type=float, default=0.001, help='Weight decay (L2 penalty).')
-parser.add_argument('--preparedata', type=bool, default=0, help='Recreate the dataset.')
+
+parser.add_argument('--preparedata', type=bool, default=1, help='Recreate the dataset.')
+parser.add_argument('--dataset', type=bool, default=0, help='select the dataset 1. Accent , 0. Language')
 
 # Loss network trainer
-parser.add_argument('--lresume', type=int, default=1, help='resume loss from checkpoint')
+parser.add_argument('--lresume', type=int, default=0, help='resume loss from checkpoint')
 parser.add_argument('--loss_lr', type=float, default=0.0001, help='learning rate')
 
 # Accent Network trainer
-parser.add_argument('--aresume', type=int, default=1, help='resume accent network from checkpoint')
+parser.add_argument('--aresume', type=int, default=0, help='resume accent network from checkpoint')
 parser.add_argument('--accent_lr', type=float, default=0.0001
-    , help='learning rate fro accent network')
+    , help='learning rate for accent network')
+
+# Language Network trainer
+parser.add_argument('--langresume', type=int, default=0, help='resume language network from checkpoint')
+parser.add_argument('--lang_lr', type=float, default=0.0001
+    , help='learning rate for language network')
 
 args = parser.parse_args()
 
@@ -105,32 +112,48 @@ mse = torch.nn.MSELoss() # MaskedMSE()
 criterion = nn.CrossEntropyLoss()
 
 print('==> Creating networks..')
+''' 
+# Uncomment while training transformation network 
 t_net = Transformation().to(device)
 a_net = AlexNet().to(device)
 encoder = Encoder().to(device)
 decoder = Decoder().to(device)
+'''
 
 if(args.preparedata):
     print('==> Preparing data..')
-    filtered_df = filter_df(None)
+    if(args.dataset):
+        filtered_df = filter_df(None)
+    else:
+        filtered_df = accent_new()
+
     X_train, X_test, y_train, y_test = split_people(filtered_df)
 
     train_count = Counter(y_train)
     test_count =  Counter(y_test)
-    print('==> Creatting segments..')
+    print('==> Creating segments..')
     X_train, y_train = make_segments(X_train, y_train)
     X_train, _, y_train, _ = train_test_split(X_train, y_train, test_size=0)
 
     saveSpectrogram(X_train[0], "../save/plots/input/new_feature_test.png")
     print("==> Saving dataset..")
-    with open("../save/dataset/data.dat", "wb") as f:
-        data = (X_train, X_test, y_train, y_test)
-        pickle.dump(data, f)
+    if(args.dataset):
+        with open("../save/dataset/data.dat", "wb") as f:
+            data = (X_train, X_test, y_train, y_test)
+            pickle.dump(data, f)
+    else:
+        with open("../save/dataset/lang_data.dat", "wb") as f:
+            data = (X_train, X_test, y_train, y_test)
+            pickle.dump(data, f)
+
 else:
     print("==> Loading dataset..")
-    with open("../save/dataset/data.dat", "rb") as f:
-        (X_train, X_test, y_train, y_test) = pickle.load(f)
-        
+    if(args.dataset):
+        with open("../save/dataset/data.dat", "rb") as f:
+            (X_train, X_test, y_train, y_test) = pickle.load(f)
+    else:
+        with open("../save/dataset/lang_data.dat", "rb") as f:
+            (X_train, X_test, y_train, y_test) = pickle.load(f)
 
 
 if(args.lresume):
@@ -158,6 +181,18 @@ if(args.aresume):
         with open("../save/accent/info.txt", "r") as f:
             asepoch, astep = (int(i) for i in str(f.read()).split(" "))
             print("=> Loss Network : prev epoch found")
+
+if(args.langresume):
+    with open("../save/language/logs/languagen_train_loss.log", "w+") as f:
+        pass 
+    if(os.path.isfile("../save/language/network.ckpt")):
+        a_net.load_state_dict(torch.load('../save/language/network.ckpt'))
+        print("=> Language Network : loaded")
+
+    if(os.path.isfile("../save/language/info.txt")):
+        with open("../save/language/info.txt", "r") as f:
+            lasepoch, lastep = (int(i) for i in str(f.read()).split(" "))
+            print("=> Language Network : prev epoch found")
 
 if(args.resume):
     with open("../save/transform/logs/transform_train_loss.log", "w+") as f:
@@ -217,6 +252,52 @@ def train_accent(epoch):
 
     astep = 0
     print('=> Accent Network : Epoch [{}/{}], Loss:{:.4f}'.format(epoch + 1, 5, train_loss / len(dataloader)))
+
+def train_lang(epoch):
+    global astep
+    trainset = LanguageDataset(X_train, y_train)
+    dataloader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size, shuffle=True)
+    dataloader = iter(dataloader)
+    print('\n=> Language Epoch: %d' % epoch)
+    
+    train_loss, correct, total = 0, 0, 0
+    params = a_net.parameters()
+    optimizer = optim.Adam(params, lr=args.accent_lr)#, momentum=0.9)#, weight_decay=5e-4)
+
+    for batch_idx in range(astep, len(dataloader)):
+        inputs, targets = next(dataloader)
+        inputs, targets = inputs.to(device), targets.to(device)
+
+        optimizer.zero_grad()
+        y_pred = a_net(inputs)
+        loss = criterion(y_pred, targets)
+        loss.backward()
+        optimizer.step()
+
+        train_loss += loss.item()
+        _, predicted = y_pred.max(1)
+        total += targets.size(0)
+        correct += predicted.eq(targets).sum().item()
+
+        with open("../save/language/logs/languagen_train_loss.log", "a+") as lfile:
+            lfile.write("{}\n".format(train_loss / total))
+
+        with open("../save/language/logs/languagen_train_acc.log", "a+") as afile:
+            afile.write("{}\n".format(correct / total))
+
+        del inputs
+        del targets
+        gc.collect()
+        torch.cuda.empty_cache()
+
+        torch.save(a_net.state_dict(), '../save/language/network.ckpt')
+        with open("../save/language/info.txt", "w+") as f:
+            f.write("{} {}".format(epoch, batch_idx))
+
+        progress_bar(batch_idx, len(dataloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)' % (train_loss/(batch_idx+1), 100.*correct/total, correct, total))
+
+    astep = 0
+    print('=> Language Network : Epoch [{}/{}], Loss:{:.4f}'.format(epoch + 1, 5, train_loss / len(dataloader)))
 
 def train_lossn(epoch):
     global lstep
@@ -358,15 +439,16 @@ encoder = Encoder().to(device)
 decoder = Decoder().to(device)
 for epoch in range(lsepoch, lsepoch + args.epochs):
     train_lossn(epoch)
+'''
 
 a_net = AlexNet().to(device)
-for epoch in range(asepoch, asepoch + args.epochs):
-    train_accent(epoch)
+for epoch in range(lasepoch, lasepoch + args.epochs):
+    train_lang(epoch)
     test()
 
 '''
 t_net = Transformation().to(device)
 for epoch in range(tsepoch, tsepoch + args.epochs):
     train_transformation(epoch)
-
+'''
 #test()

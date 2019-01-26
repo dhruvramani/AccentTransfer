@@ -28,12 +28,12 @@ def expandToGrid(spectrogram, gridSize):
 # Return a 2d numpy array of the spectrogram
 def audioFileToSpectrogram(audioFile, fftWindowSize = FFT):
     spectrogram = librosa.stft(audioFile, fftWindowSize)
-    #S, phase = librosa.magphase(spectrogram)
-    phase = np.imag(spectrogram)
-    #amplitude = np.log1p(np.abs(spectrogram))
-    amplitude = np.log1p(np.absolute(np.real(spectrogram)))
+    S, phase = librosa.magphase(spectrogram)
+    # phase = np.imag(spectrogram)
+    amplitude = np.log1p(np.abs(S))
+    # amplitude = np.log1p(np.absolute(np.real(spectrogram)))
     print(amplitude.shape)
-    print(phase.shape)
+    # print(phase.shape)
     return amplitude, phase
 
 # This is the nutty one
