@@ -124,6 +124,39 @@ def filter_df(df):
     df = {'wav':val,'native_language':val2}
     return df
 
+
+def accent_new():
+
+    english, englishy = [], []
+    german, germany = [], []
+    french, frenchy = [], []
+    
+    e, g, f = 0, 0, 0
+    sub_dir = ['english-new', 'german-new', 'french-new']
+    dirs = '/home/nevronas/dataset/accent-new/'
+
+    for dir in sub_dir:
+        path = os.path.join(dirs, dir)
+        files = os.listdir(path)
+        for file in files:
+            audio, sampleRate = loadAudioFile(file)
+            spectrogram, phase = audioFileToSpectrogram(audio)
+            if(dir == 'english-new'):
+                english.append(spectrogram)
+                englishy.append(0)
+            elif(dir == 'german-new'):
+                german.append(spectrogram)
+                germany.append(1)
+            else:
+                french.append(spectrogram)
+                frenchy.append(2)
+
+    val = english + german + french
+    val2 = englishy + germany + frenchy
+    df = {'wav': val, 'native_language': val2}
+
+    return df 
+
 def split_people(df,test_size=0.2):
     '''
     Create train test split of DataFrame
