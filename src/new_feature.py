@@ -11,7 +11,9 @@ FFT = 1536
 ITER = 10
 
 def loadAudioFile(filePath):
-    audio, sampleRate = librosa.load('/home/nevronas/dataset/accent/recordings/{}.wav'.format(filePath))
+    # audio, sampleRate = librosa.load('/home/nevronas/dataset/accent/recordings/{}.wav'.format(filePath))
+    audio, sampleRate = librosa.load(filePath)
+    
     return audio, sampleRate
 
 def saveAudioFile(audioFile, filePath, sampleRate):
