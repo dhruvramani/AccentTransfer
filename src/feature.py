@@ -40,12 +40,13 @@ def transform_stft(signal, pad=0):
     return S, phase
 
 def to_mel(signal):
-    signal = signal.flatten()
-    signal, _ = transform_stft(signal)
+    #signal = signal.flatten()
+    #signal, _ = transform_stft(signal)
+    signal,phase=audioFileToSpectrogram(signal)
     mel = mel_transform(signal)
     signal = np.matmul(mel, signal) # sd is troch tensor
     print(signal.shape)
-    return signal
+    return signal,phase
 
 def filter_df(df):
     '''
@@ -73,7 +74,8 @@ def filter_df(df):
                 if(file[0] == 'a' and a < LIMIT):
 
                     audio, sampleRate = loadAudioFile(file)
-                    spectrogram, phase = audioFileToSpectrogram(audio)
+                    #spectrogram, phase = audioFileToSpectrogram(audio)
+                    spectrogram, phase=to_mel(audio)
                     arabic.append(spectrogram)
                     del audio, spectrogram, sampleRate, phase
 
@@ -84,7 +86,8 @@ def filter_df(df):
                 elif(file[0] == 'e' and e < LIMIT):
 
                     audio, sampleRate = loadAudioFile(file)
-                    spectrogram, phase = audioFileToSpectrogram(audio)
+                    #spectrogram, phase = audioFileToSpectrogram(audio)
+                    spectrogram, phase = to_mel(audio)
                     english.append(spectrogram)
                     del audio, spectrogram, sampleRate, phase
 
@@ -95,7 +98,8 @@ def filter_df(df):
                 elif(file[0] == 'm' and m < LIMIT):
 
                     audio, sampleRate = loadAudioFile(file)
-                    spectrogram, phase = audioFileToSpectrogram(audio)
+                    #spectrogram, phase = audioFileToSpectrogram(audio)
+                    spectrogram, phase= to_mel(audio)
                     mandarin.append(spectrogram)
                     del audio, spectrogram, sampleRate, phase
 

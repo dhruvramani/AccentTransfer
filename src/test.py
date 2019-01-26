@@ -28,20 +28,36 @@ def collate_fn(data):
     del data
     audios = torch.stack(audios, 0)
     return audios, captions
-'''
-def reconstruction(S, phase, mel):
-    S1=np.matmul( np.transpose(mel) , S)
-    exp = np.expm1(S1)
-    arr=exp[:,540:550]
-    exp1=exp-(np.mean(arr)+10*np.std(arr))
-    #print((np.mean(arr)+10*np.std(arr)))
-    matplotlib.image.imsave('../save/plots/output/denoised_audio.png', exp1)
-    comple = exp1 * np.exp(phase)
-    istft = librosa.istft(comple)
-    return istft * 10000
-'''
+
+def to_mel(signal):
+    #signal = signal.flatten()
+    #signal, _ = transform_stft(signal)
+    signal,phase=audioFileToSpectrogram(signal)
+    mel = mel_transform(signal)
+    signal = np.matmul(mel, signal) # sd is troch tensor
+    print(signal.shape)
+    return signal,phase
+
+#def reconstruction(S, phase):
+def reconstruction(spectrogram,mel, fftWindowSize = FFT, phaseIterations=10, phase=None):
+    if phase is not None:
+        # reconstructing the new complex matrix
+
+        spectrogram1=np.matmul( np.transpose(mel) , spectrogram[:-1,:])
+        #squaredAmplitudeAndSquaredPhase = np.power(spectrogram1, 2)
+        #squaredPhase = np.power(phase, 2)
+        #unexpd = np.sqrt(np.max(squaredAmplitudeAndSquaredPhase[:,:-1] - squaredPhase, 0))
+        #unexpd = np.sqrt(np.absolute(squaredAmplitudeAndSquaredPhase[:,:-1] - squaredPhase))
+        amplitude = np.expm1(spectrogram1)
+        #stftMatrix = amplitude + phase * 1j
+        #stftMatrix=amplitude[:,:-1]*(np.cos(phase)+ 1j* np.sin(phase))
+        stftMatrix=amplitude[:,:-1]+ 1j* phase
+        audio = librosa.istft(stftMatrix)
+        #print(phase[0])
+        return audio*100
+
 def mel_transform(S, fs=48000):
-    mel = librosa.filters.mel(fs, N_FFT)
+    mel = librosa.filters.mel(fs, FFT)
     return  mel # shit sors
 
 def inp_transform(inp):
@@ -54,7 +70,7 @@ def inp_transform(inp):
     inp = torch.Tensor(inp)
     inp = inp.unsqueeze(0)
     inp = inp.unsqueeze(0)
-    return inp, phase, mel
+    return inp, phase,mel
 
 def denoise(nparr, val=540):
     sub = nparr[:,val:val+10]#10
@@ -111,8 +127,12 @@ def main():
 
     #New stuff
 
-    audio, sampleRate = loadAudioFile("english2")
-    audio, phase = audioFileToSpectrogram(audio)
+    # audio, sampleRate = loadAudioFile("english34")
+    audio, sampleRate = load_audio('/home/nevronas/dataset/accent/manda.wav')
+    #audio, phase = audioFileToSpectrogram(audio)
+    #audio, sampleRate = load_audio('/home/nevronas/dataset/vctk/raw/p280_408.wav')
+    audio,phase=to_mel(audio)
+    audio, phase = audio[:,:500], phase[:,:500]
     audio = torch.Tensor(audio)
     audio = audio.unsqueeze(0)
     audio = audio.unsqueeze(0)
@@ -120,7 +140,9 @@ def main():
     out = trans_net(audio)
     out = out[0].detach().cpu().numpy()
     saveSpectrogram(out[0], "../save/plots/output/accented_audio.png")
-    out = spectrogramToAudioFile(out[0], phase=phase)
+    #out = spectrogramToAudioFile(out[0], phase=phase
+    mel=mel_transform(out[0])
+    out = reconstruction(out[0],mel,phase=phase)
     saveAudioFile(out, "../save/plots/output/raw_output.wav", sampleRate)
     
         

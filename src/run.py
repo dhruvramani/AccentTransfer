@@ -27,7 +27,7 @@ import matplotlib
 from new_feature import *
 
 parser = argparse.ArgumentParser(description='PyTorch Speech Accent Transfer')
-parser.add_argument('--lr', default=0.01, type=float, help='learning rate') # NOTE change for diff models
+parser.add_argument('--lr', default=0.001, type=float, help='learning rate') # NOTE change for diff models
 parser.add_argument('--batch_size', default=4, type=int)
 parser.add_argument('--resume', '-r', type=int, default=1, help='resume from checkpoint')
 parser.add_argument('--epochs', '-e', type=int, default=15, help='Number of epochs to train.')
@@ -62,6 +62,18 @@ def collate_fn(data):
     del data
     audio = torch.stack(audio, 0)
     return audio, captions
+'''
+def mel_transform(S, fs=48000):
+    mel = librosa.filters.mel(fs, N_FFT)
+    return  mel 
+def to_mel(signal):
+    #signal = signal.flatten()
+    signal, _ = audioFileToSpectrogram(signal)
+    mel = mel_transform(signal)
+    signal = np.matmul(mel, signal) # sd is troch tensor
+    print(signal.shape)
+    return signal 
+'''
 
 def inp_transform(inp):
     inp = inp.numpy()
@@ -256,7 +268,7 @@ def train_lossn(epoch):
     lstep = 0
     print('=> Loss Network : Epoch [{}/{}], Loss:{:.4f}'.format(epoch + 1, 5, train_loss / len(dataloader)))
 
-def train_transformation(epoch, accent_idx=2):
+def train_transformation(epoch, accent_idx=0):
     global tstep
     print('\n=> Transformation Epoch: {}'.format(epoch))
     t_net.train()
@@ -280,7 +292,7 @@ def train_transformation(epoch, accent_idx=2):
     for param in a_net.parameters():
         param.requires_grad = False
 
-    alpha, beta = 100, 100000 # TODO : CHANGEd from 7.5, 100
+    alpha, beta = 10, 1500 # TODO : CHANGEd from 7.5, 100
     for i in range(tstep, len(dataloader)):
         (audio, captions) = next(dataloader)
         del captions
@@ -297,7 +309,7 @@ def train_transformation(epoch, accent_idx=2):
         y_a = torch.ones(y_apred.shape[0]).type(torch.LongTensor).to(device) * accent_idx
         a_loss = criterion(y_apred, y_a)
 
-        loss = alpha * c_loss + beta * a_loss 
+        loss = alpha * c_loss + beta * a_loss.pow(2) 
 
         train_loss, tr_con, tr_acc = train_loss + loss.item(), tr_con + c_loss.item(), tr_acc + a_loss.item()
         

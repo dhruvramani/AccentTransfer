@@ -28,9 +28,12 @@ def expandToGrid(spectrogram, gridSize):
 # Return a 2d numpy array of the spectrogram
 def audioFileToSpectrogram(audioFile, fftWindowSize = FFT):
     spectrogram = librosa.stft(audioFile, fftWindowSize)
+    #S, phase = librosa.magphase(spectrogram)
     phase = np.imag(spectrogram)
-    amplitude = np.log1p(np.abs(spectrogram))
+    #amplitude = np.log1p(np.abs(spectrogram))
+    amplitude = np.log1p(np.absolute(np.real(spectrogram)))
     print(amplitude.shape)
+    print(phase.shape)
     return amplitude, phase
 
 # This is the nutty one
@@ -39,7 +42,7 @@ def spectrogramToAudioFile(spectrogram, fftWindowSize = FFT, phaseIterations=10,
         # reconstructing the new complex matrix
         squaredAmplitudeAndSquaredPhase = np.power(spectrogram, 2)
         squaredPhase = np.power(phase, 2)
-        unexpd = np.sqrt(np.max(squaredAmplitudeAndSquaredPhase[:-2,:-2] - squaredPhase, 0))
+        unexpd = np.sqrt(np.max(squaredAmplitudeAndSquaredPhase[:-2,:-1] - squaredPhase, 0))
         amplitude = np.expm1(unexpd)
         stftMatrix = amplitude + phase * 1j
         audio = librosa.istft(stftMatrix)
@@ -48,6 +51,7 @@ def spectrogramToAudioFile(spectrogram, fftWindowSize = FFT, phaseIterations=10,
         # credit to https://dsp.stackexchange.com/questions/3406/reconstruction-of-audio-signal-from-its-absolute-spectrogram/3410#3410
         # for the algorithm used
         amplitude = np.exp(spectrogram) - 1
+        amplitude = amplitude[:-2,:-1]
         for i in range(phaseIterations):
             if i == 0:
                 reconstruction = np.random.random_sample(amplitude.shape) + 1j * (2 * np.pi * np.random.random_sample(amplitude.shape) - np.pi)
@@ -55,7 +59,7 @@ def spectrogramToAudioFile(spectrogram, fftWindowSize = FFT, phaseIterations=10,
                 reconstruction = librosa.stft(audio, fftWindowSize)
             spectrum = amplitude * np.exp(1j * np.angle(reconstruction))
             audio = librosa.istft(spectrum)
-    return audio
+    return audio*10000
 
 def loadSpectrogram(filePath):
     fileName = basename(filePath)
@@ -101,3 +105,9 @@ def handleImage(fileName, args, phase=None):
 
     saveAudioFile(audio, fileName + fileSuffix("Output", fft=FFT, iter=ITER) + ".wav", sampleRate)
 
+def old_reconstruction(S, phase):
+    S = S[:-2,:-1]
+    exp = np.expm1(S)
+    comple = exp * np.exp(phase)
+    istft = librosa.istft(comple)
+    return istft *1000
