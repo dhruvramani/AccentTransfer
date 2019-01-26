@@ -133,6 +133,8 @@ def accent_new():
     sub_dir = ['english-new', 'german-new', 'french-new']
     dirs = '/home/nevronas/dataset/accent-new/'
 
+    LIMIT = 400
+
     for dir in sub_dir:
         path = os.path.join(dirs, dir)
         files = os.listdir(path)
@@ -140,15 +142,20 @@ def accent_new():
             file = os.path.join(path, file)
             audio, sampleRate = loadAudioFile(file)
             spectrogram, phase = audioFileToSpectrogram(audio)
-            if(dir == 'english-new'):
+            if(dir == 'english-new' and e < LIMIT):
                 english.append(spectrogram)
                 englishy.append(0)
-            elif(dir == 'german-new'):
+                e+=1
+
+            elif(dir == 'german-new' and g < LIMIT):
                 german.append(spectrogram)
                 germany.append(1)
-            else:
+                g+=1
+
+            elif(dir == 'french-new' and f < LIMIT):
                 french.append(spectrogram)
                 frenchy.append(2)
+                f+=1
 
     val = english + german + french
     val2 = englishy + germany + frenchy
