@@ -137,6 +137,7 @@ def accent_new():
         path = os.path.join(dirs, dir)
         files = os.listdir(path)
         for file in files:
+            file = os.path.join(path, file)
             audio, sampleRate = loadAudioFile(file)
             spectrogram, phase = audioFileToSpectrogram(audio)
             if(dir == 'english-new'):
