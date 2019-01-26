@@ -132,7 +132,7 @@ if(args.preparedata):
     train_count = Counter(y_train)
     test_count =  Counter(y_test)
     print('==> Creating segments..')
-    X_train, y_train = make_segments(X_train, y_train)
+    X_train, y_train = make_segments(X_train, y_train, 100)
     X_train, _, y_train, _ = train_test_split(X_train, y_train, test_size=0)
 
     saveSpectrogram(X_train[0], "../save/plots/input/new_feature_test.png")
