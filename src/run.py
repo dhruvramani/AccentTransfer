@@ -34,11 +34,11 @@ parser.add_argument('--epochs', '-e', type=int, default=15, help='Number of epoc
 parser.add_argument('--momentum', '-lm', type=float, default=0.9, help='Momentum.')
 parser.add_argument('--decay', '-ld', type=float, default=0.001, help='Weight decay (L2 penalty).')
 
-parser.add_argument('--preparedata', type=bool, default=1, help='Recreate the dataset.')
-parser.add_argument('--dataset', type=bool, default=0, help='select the dataset 1. Accent , 0. Language')
+parser.add_argument('--preparedata', type=bool, default=0, help='Recreate the dataset.')
+parser.add_argument('--dataset', type=bool, default=1, help='select the dataset 1. Accent , 0. Language')
 
 # Loss network trainer
-parser.add_argument('--lresume', type=int, default=0, help='resume loss from checkpoint')
+parser.add_argument('--lresume', type=int, default=1, help='resume loss from checkpoint')
 parser.add_argument('--loss_lr', type=float, default=0.0001, help='learning rate')
 
 # Accent Network trainer
@@ -47,7 +47,7 @@ parser.add_argument('--accent_lr', type=float, default=0.0001
     , help='learning rate for accent network')
 
 # Language Network trainer
-parser.add_argument('--langresume', type=int, default=0, help='resume language network from checkpoint')
+parser.add_argument('--langresume', type=int, default=1, help='resume language network from checkpoint')
 parser.add_argument('--lang_lr', type=float, default=0.0001
     , help='learning rate for language network')
 
@@ -125,13 +125,12 @@ mse = torch.nn.MSELoss() # MaskedMSE()
 criterion = nn.CrossEntropyLoss()
 
 print('==> Creating networks..')
-''' 
+
 # Uncomment while training transformation network 
 t_net = Transformation().to(device)
 a_net = AlexNet().to(device)
 encoder = Encoder().to(device)
 decoder = Decoder().to(device)
-'''
 
 if(args.preparedata):
     print('==> Preparing data..')
@@ -481,14 +480,15 @@ for epoch in range(lsepoch, lsepoch + args.epochs):
     train_lossn(epoch)
 '''
 
+'''
 a_net = AlexNet().to(device)
 for epoch in range(lasepoch, lasepoch + args.epochs):
     train_lang(epoch)
     test()
-
 '''
+
 t_net = Transformation().to(device)
 for epoch in range(tsepoch, tsepoch + args.epochs):
     train_transformation(epoch)
-'''
+
 #test()
