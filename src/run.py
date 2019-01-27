@@ -412,22 +412,22 @@ def train_transformation(epoch, accent_idx=1):
 
         ## Remove this if Gram Matrix don't work
         a_loss = 0
-            acc_aud = []
-            for k in range(audio.size()[0]): # No. of accent audio == batch_size
-                acc_aud.append(accent_audio)
-            acc_aud = torch.stack(acc_aud).to(device)
+        acc_aud = []
+        for k in range(audio.size()[0]): # No. of accent audio == batch_size
+            acc_aud.append(accent_audio)
+        acc_aud = torch.stack(acc_aud).to(device)
 
-            for ac_i in range(2, len(a_list)-4, 3): # NOTE : gets relu of 1, 2, 3
-                ac_activ = torch.nn.Sequential(*a_list[:ac_i])
-                for param in ac_activ.parameters():
-                    param.requires_grad = False
+        for ac_i in range(2, len(a_list)-4, 3): # NOTE : gets relu of 1, 2, 3
+            ac_activ = torch.nn.Sequential(*a_list[:ac_i])
+            for param in ac_activ.parameters():
+                param.requires_grad = False
 
-                y_a = gram(ac_activ(y_t))
-                accent = gram(ac_activ(acc_aud))
+            y_a = gram(ac_activ(y_t))
+            accent = gram(ac_activ(acc_aud))
         
-                a_loss += mse(y_a, accent)
+            a_loss += mse(y_a, accent)
             
-            del acc_aud 
+        del acc_aud 
         ###
 
         loss = alpha * c_loss + beta * a_loss
