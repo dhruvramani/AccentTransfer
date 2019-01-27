@@ -34,7 +34,7 @@ parser.add_argument('--epochs', '-e', type=int, default=15, help='Number of epoc
 parser.add_argument('--momentum', '-lm', type=float, default=0.9, help='Momentum.')
 parser.add_argument('--decay', '-ld', type=float, default=0.001, help='Weight decay (L2 penalty).')
 
-parser.add_argument('--preparedata', type=bool, default=0, help='Recreate the dataset.')
+parser.add_argument('--preparedata', type=bool, default=1, help='Recreate the dataset.')
 parser.add_argument('--dataset', type=bool, default=0, help='select the dataset 1. Accent , 0. Language')
 
 # Loss network trainer
@@ -106,6 +106,19 @@ def convert_to_mel(audio):
     audio = torch.matmul(meld, audio)
     return audio
 
+def get_accent(path='../save/style/ger53.wav'):
+    N_FFT = 1536
+    signal, fs = librosa.load(path)
+    del fs
+    signal = librosa.stft(signal, n_fft=N_FFT)
+    signal, phase = librosa.magphase(signal)
+    del phase
+    signal = np.log1p(signal)
+    signal = signal[ :, 60:188]
+    signal = torch.from_numpy(signal) # TODO : get style audio
+    signal = signal.unsqueeze(0)
+    return signal
+
 best_acc, tsepoch, tstep, lsepoch, lstep, astep, asepoch, astype, lasepoch, lastep = 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 
 mse = torch.nn.MSELoss() # MaskedMSE()
@@ -132,7 +145,7 @@ if(args.preparedata):
     train_count = Counter(y_train)
     test_count =  Counter(y_test)
     print('==> Creating segments..')
-    X_train, y_train = make_segments(X_train, y_train, 100)
+    X_train, y_train = make_segments(X_train, y_train)
     X_train, _, y_train, _ = train_test_split(X_train, y_train, test_size=0)
 
     saveSpectrogram(X_train[0], "../save/plots/input/new_feature_test.png")
@@ -349,7 +362,7 @@ def train_lossn(epoch):
     lstep = 0
     print('=> Loss Network : Epoch [{}/{}], Loss:{:.4f}'.format(epoch + 1, 5, train_loss / len(dataloader)))
 
-def train_transformation(epoch, accent_idx=0):
+def train_transformation(epoch, accent_idx=1):
     global tstep
     print('\n=> Transformation Epoch: {}'.format(epoch))
     t_net.train()
@@ -367,13 +380,20 @@ def train_transformation(epoch, accent_idx=0):
     l_list = list(l_list[0].children())
     conten_activ = torch.nn.Sequential(*l_list[:-1]) # Not having batchnorm
 
+    a_list = list(a_net.children())
+    a_list = list(a_list[0].children())
+    accent_activ = torch.nn.Sequential(*a_list[:-1])
+
     for param in conten_activ.parameters():
         param.requires_grad = False
 
-    for param in a_net.parameters():
+    for param in accent_activ.parameters():
         param.requires_grad = False
 
-    alpha, beta = 10, 1500 # TODO : CHANGEd from 7.5, 100
+    alpha, beta = 100, 2000 # TODO : CHANGEd from 7.5, 100
+    gram = GramMatrix()
+    accent_audio = get_accent()
+
     for i in range(tstep, len(dataloader)):
         (audio, captions) = next(dataloader)
         del captions
@@ -386,11 +406,31 @@ def train_transformation(epoch, accent_idx=0):
         y_c = conten_activ(y_t)
         c_loss = mse(y_c[:, :, :-1, :-1], content)
 
-        y_apred = a_net(y_t)
-        y_a = torch.ones(y_apred.shape[0]).type(torch.LongTensor).to(device) * accent_idx
-        a_loss = criterion(y_apred, y_a)
+        # y_apred = a_net(y_t)
+        # y_a = torch.ones(y_apred.shape[0]).type(torch.LongTensor).to(device) * accent_idx
+        # a_loss = criterion(y_apred, y_a)
 
-        loss = alpha * c_loss + beta * a_loss.pow(2) 
+        ## Remove this if Gram Matrix don't work
+        a_loss = 0
+            acc_aud = []
+            for k in range(audio.size()[0]): # No. of accent audio == batch_size
+                acc_aud.append(accent_audio)
+            acc_aud = torch.stack(acc_aud).to(device)
+
+            for ac_i in range(2, len(a_list)-4, 3): # NOTE : gets relu of 1, 2, 3
+                ac_activ = torch.nn.Sequential(*a_list[:ac_i])
+                for param in ac_activ.parameters():
+                    param.requires_grad = False
+
+                y_a = gram(ac_activ(y_t))
+                accent = gram(ac_activ(acc_aud))
+        
+                a_loss += mse(y_a, accent)
+            
+            del acc_aud 
+        ###
+
+        loss = alpha * c_loss + beta * a_loss
 
         train_loss, tr_con, tr_acc = train_loss + loss.item(), tr_con + c_loss.item(), tr_acc + a_loss.item()
         

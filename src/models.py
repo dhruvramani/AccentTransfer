@@ -243,8 +243,8 @@ class AlexNet(nn.Module):
             nn.BatchNorm2d(128),
         )
         self.classifier = nn.Sequential(
-            # nn.Linear(128*94*14, 256),
-            nn.Linear(128*94*10, 256),
+            nn.Linear(128*94*14, 256),
+            # nn.Linear(128*94*10, 256),
             nn.ReLU(inplace=True),
             nn.Dropout(),
             nn.Linear(256, num_classes)
@@ -253,8 +253,8 @@ class AlexNet(nn.Module):
     def forward(self, x):
         x = self.features(x)
         # print(x.shape)
-        # x = x.view(x.size()[0], 128*94*14)
-        x = x.view(x.size()[0], 128*94*10)
+        x = x.view(x.size()[0], 128*94*14)
+        # x = x.view(x.size()[0], 128*94*10)
         x = self.classifier(x)
         return x
 

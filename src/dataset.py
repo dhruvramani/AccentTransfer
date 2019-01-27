@@ -38,7 +38,7 @@ def create_segmented_mels(X_train):
     '''
     segmented_mels = []
     for mel in X_train:
-        segmented_mels.append(segment_one(mel, 100))
+        segmented_mels.append(segment_one(mel))
     return(segmented_mels)
 
 class AccentDataset(Dataset):
